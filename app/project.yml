@@ -1,0 +1,115 @@
+name: Oatmeal
+options:
+  bundleIdPrefix: com.oatmeal
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "16.0"
+  createIntermediateGroups: true
+
+packages:
+  FluidAudio:
+    url: https://github.com/FluidInference/FluidAudio.git
+    exactVersion: "0.13.6"
+  KeyboardShortcuts:
+    url: https://github.com/sindresorhus/KeyboardShortcuts.git
+    from: "2.0.0"
+  WhisperKit:
+    url: https://github.com/argmaxinc/WhisperKit.git
+    from: "0.9.0"
+
+targets:
+  Oatmeal:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources
+      - path: Resources/Brand
+        buildPhase: resources
+        type: folder
+      - path: Resources/Fonts
+        buildPhase: resources
+        type: folder
+      - path: Resources/Sounds
+        buildPhase: resources
+        type: folder
+      - path: Resources/AppIcon.icns
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.oatmeal.app
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        PRODUCT_NAME: Oatmeal
+        CODE_SIGN_ENTITLEMENTS: Resources/Oatmeal.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        SWIFT_VERSION: "5.9"
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Resources/Info.plist
+      configs:
+        debug:
+          # A real certificate gives a stable designated requirement, so macOS
+          # keeps the Microphone, Calendar and Accessibility grants across
+          # rebuilds (ad-hoc signatures change with every build).
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: "Apple Development: Created via API (LKDG3C2MY9)"
+          DEVELOPMENT_TEAM: YBLYDAYH96
+          ENABLE_HARDENED_RUNTIME: "NO"
+        release:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: "Developer ID Application: Branden Chong (YBLYDAYH96)"
+          DEVELOPMENT_TEAM: YBLYDAYH96
+          ENABLE_HARDENED_RUNTIME: "YES"
+          OTHER_CODE_SIGN_FLAGS: "--timestamp"
+          CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
+    dependencies:
+      - package: FluidAudio
+      - package: KeyboardShortcuts
+      - package: WhisperKit
+    scheme:
+      testTargets:
+        - OatmealTests
+    info:
+      path: Resources/Info.plist
+      properties:
+        CFBundleName: Oatmeal
+        CFBundleDisplayName: Oatmeal
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        CFBundleIconFile: AppIcon
+        LSApplicationCategoryType: public.app-category.productivity
+        ATSApplicationFontsPath: Fonts
+        CFBundleURLTypes:
+          - CFBundleURLName: com.oatmeal.app.links
+            CFBundleURLSchemes:
+              - oatmeal
+        NSMicrophoneUsageDescription: "Oatmeal turns what you say into text and meeting notes, transcribed on your Mac."
+        NSSpeechRecognitionUsageDescription: "Oatmeal turns what you say into text with Apple's on-device speech recognition when you choose Apple Speech."
+        NSCalendarsUsageDescription: "Oatmeal names your meeting notes after the event in your calendar."
+        NSCalendarsFullAccessUsageDescription: "Oatmeal names your meeting notes after the event in your calendar."
+        NSAudioCaptureUsageDescription: "Oatmeal records meeting audio on your Mac so it can write notes. No bot joins the call."
+
+  OatmealTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: Oatmeal
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.oatmeal.app.tests
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        SWIFT_VERSION: "5.9"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Oatmeal.app/Contents/MacOS/Oatmeal"
+      configs:
+        debug:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: "Apple Development: Created via API (LKDG3C2MY9)"
+          DEVELOPMENT_TEAM: YBLYDAYH96
+        release:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: "Apple Development: Created via API (LKDG3C2MY9)"
+          DEVELOPMENT_TEAM: YBLYDAYH96

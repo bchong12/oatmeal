@@ -1,0 +1,4 @@
+build/
+DerivedData/
+Oatmeal.xcodeproj/
+.DS_Store
