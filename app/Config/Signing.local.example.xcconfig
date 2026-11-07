@@ -1,0 +1,4 @@
+// Copy to Signing.local.xcconfig. `security find-identity -v -p codesigning` lists your certificates.
+OATMEAL_SIGN_IDENTITY = Apple Development: Your Name (XXXXXXXXXX)
+OATMEAL_SIGN_IDENTITY[config=Release] = Developer ID Application: Your Name (TEAMID1234)
+OATMEAL_TEAM = TEAMID1234

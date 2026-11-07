@@ -1,5 +1,5 @@
 import XCTest
-@testable import Dayform
+@testable import Oatmeal
 
 /// Drives the right-⌥ state machine with fake presses (no keyboard needed).
 @MainActor

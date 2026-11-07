@@ -46,22 +46,20 @@ targets:
         SWIFT_VERSION: "5.9"
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: Resources/Info.plist
+        # Signing comes from Config/Signing.xcconfig: ad-hoc unless you add your own certificate.
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "$(OATMEAL_SIGN_IDENTITY)"
+        DEVELOPMENT_TEAM: "$(OATMEAL_TEAM)"
       configs:
         debug:
-          # A real certificate gives a stable designated requirement, so macOS
-          # keeps the Microphone, Calendar and Accessibility grants across
-          # rebuilds (ad-hoc signatures change with every build).
-          CODE_SIGN_STYLE: Manual
-          CODE_SIGN_IDENTITY: "Apple Development: Created via API (LKDG3C2MY9)"
-          DEVELOPMENT_TEAM: YBLYDAYH96
           ENABLE_HARDENED_RUNTIME: "NO"
         release:
-          CODE_SIGN_STYLE: Manual
-          CODE_SIGN_IDENTITY: "Developer ID Application: Branden Chong (YBLYDAYH96)"
-          DEVELOPMENT_TEAM: YBLYDAYH96
           ENABLE_HARDENED_RUNTIME: "YES"
           OTHER_CODE_SIGN_FLAGS: "--timestamp"
           CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
+    configFiles:
+      Debug: Config/Signing.xcconfig
+      Release: Config/Signing.xcconfig
     dependencies:
       - package: FluidAudio
       - package: KeyboardShortcuts
@@ -104,12 +102,9 @@ targets:
         SWIFT_VERSION: "5.9"
         BUNDLE_LOADER: "$(TEST_HOST)"
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Oatmeal.app/Contents/MacOS/Oatmeal"
-      configs:
-        debug:
-          CODE_SIGN_STYLE: Manual
-          CODE_SIGN_IDENTITY: "Apple Development: Created via API (LKDG3C2MY9)"
-          DEVELOPMENT_TEAM: YBLYDAYH96
-        release:
-          CODE_SIGN_STYLE: Manual
-          CODE_SIGN_IDENTITY: "Apple Development: Created via API (LKDG3C2MY9)"
-          DEVELOPMENT_TEAM: YBLYDAYH96
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "$(OATMEAL_SIGN_IDENTITY)"
+        DEVELOPMENT_TEAM: "$(OATMEAL_TEAM)"
+    configFiles:
+      Debug: Config/Signing.xcconfig
+      Release: Config/Signing.xcconfig

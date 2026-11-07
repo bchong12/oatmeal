@@ -1,12 +1,12 @@
 import XCTest
 import AVFoundation
-@testable import Dayform
+@testable import Oatmeal
 
 /// End to end without a microphone: macOS `say` speaks a sentence into a file,
 /// Parakeet (on this Mac) transcribes it, and the clean-up runs on the result.
 final class VoicePipelineTests: XCTestCase {
     private func speak(_ text: String) throws -> [Float] {
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("dayform-say-\(UUID().uuidString).wav")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("oatmeal-say-\(UUID().uuidString).wav")
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/usr/bin/say")
         p.arguments = ["-v", "Samantha", "-o", url.path, "--data-format=LEF32@16000", text]
@@ -39,15 +39,5 @@ final class VoicePipelineTests: XCTestCase {
         print("[VoiceTest] raw: \(raw) → \(out)")
         XCTAssertFalse(out.lowercased().contains("question mark"), out)
         XCTAssertTrue(out.hasSuffix("?") && !out.hasSuffix("??"), out)
-    }
-
-    func testTaskFromSpeech() async throws {
-        let raw = try await transcribe("Call mum tomorrow at 5 pm for half an hour")
-        let p = QuickAddParser.parse(TextFormatter.format(raw, options: .init()))
-        print("[VoiceTest] raw: \(raw) → \(p.title) day:\(String(describing: p.day)) min:\(p.startMinute) dur:\(String(describing: p.minutes))")
-        XCTAssertTrue(["call mum", "call mom"].contains(p.title.lowercased()), p.title)
-        XCTAssertEqual(p.startMinute, 17 * 60)
-        XCTAssertEqual(p.minutes, 30)
-        XCTAssertNotNil(p.day)
     }
 }

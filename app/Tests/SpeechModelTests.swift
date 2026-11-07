@@ -1,10 +1,10 @@
 import XCTest
 import AVFoundation
-@testable import Dayform
+@testable import Oatmeal
 
 final class SpeechModelTests: XCTestCase {
     private var saved: [String: Any?] = [:]
-    private let keys = [SpeechModel.defaultsKey, WhisperVariant.defaultsKey, CloudSpeechModel.defaultsKey]
+    private let keys = [SpeechModel.defaultsKey, WhisperVariant.defaultsKey]
 
     override func setUp() {
         super.setUp()
@@ -21,14 +21,13 @@ final class SpeechModelTests: XCTestCase {
     // MARK: Metadata + persistence
 
     func testMetadata() {
-        XCTAssertEqual(SpeechModel.allCases.count, 6)
+        XCTAssertEqual(SpeechModel.allCases.count, 5)
         for m in SpeechModel.allCases {
             XCTAssertFalse(m.name.isEmpty); XCTAssertFalse(m.maker.isEmpty)
             XCTAssertFalse(m.languages.isEmpty); XCTAssertFalse(m.summary.isEmpty)
         }
-        XCTAssertTrue(SpeechModel.cloud.needsPro)
-        XCTAssertFalse(SpeechModel.cloud.onDevice)
-        XCTAssertEqual(SpeechModel.allCases.filter(\.needsPro), [.cloud])
+        // Everything transcribes on this Mac.
+        XCTAssertTrue(SpeechModel.allCases.allSatisfy(\.onDevice))
         XCTAssertEqual(SpeechModel.parakeetV2.languages, "English")
         XCTAssertTrue(SpeechModel.supported.contains(.parakeetV3))
         XCTAssertGreaterThan(SpeechModel.parakeetV2.approxBytes, 0)
@@ -47,11 +46,6 @@ final class SpeechModelTests: XCTestCase {
         XCTAssertEqual(WhisperVariant.selected, .largeV3Turbo)
         WhisperVariant.selected = .small
         XCTAssertEqual(UserDefaults.standard.string(forKey: "speech.whisperVariant"), "openai_whisper-small")
-
-        UserDefaults.standard.removeObject(forKey: CloudSpeechModel.defaultsKey)
-        XCTAssertEqual(CloudSpeechModel.selected.rawValue, "deepgram/nova-3")
-        CloudSpeechModel.selected = .scribe
-        XCTAssertEqual(CloudSpeechModel.selected, .scribe)
     }
 
     // MARK: Dispatch
@@ -75,9 +69,6 @@ final class SpeechModelTests: XCTestCase {
 
         let apple = await engine.backend(for: .apple)
         XCTAssertTrue(apple is AppleSpeechBackend)
-        let cloud = await engine.backend(for: .cloud)
-        XCTAssertTrue(cloud is CloudSpeechBackend)
-        XCTAssertEqual((cloud as? CloudSpeechBackend)?.fallback.model, .parakeetV3)
         if #available(macOS 15, *) {
             let q = await engine.backend(for: .qwen3)
             XCTAssertTrue(q is Qwen3Backend)
@@ -89,25 +80,14 @@ final class SpeechModelTests: XCTestCase {
 
     func testDiskInfo() {
         XCTAssertEqual(SpeechEngine.directory(.parakeetV2)?.lastPathComponent, "parakeet-tdt-0.6b-v2")
-        XCTAssertNil(SpeechEngine.directory(.cloud))
-        XCTAssertTrue(SpeechEngine.shared.isDownloaded(.cloud))
         WhisperVariant.selected = .small
         XCTAssertEqual(SpeechEngine.directory(.whisper)?.lastPathComponent, "openai_whisper-small")
-    }
-
-    func testWavEncoding() {
-        let wav = CloudSpeechBackend.wav([0, 0.5, -0.5, 1], sampleRate: 16_000)
-        XCTAssertEqual(wav.count, 44 + 8)
-        XCTAssertEqual(String(decoding: wav.prefix(4), as: UTF8.self), "RIFF")
-        XCTAssertEqual(String(decoding: wav[8..<12], as: UTF8.self), "WAVE")
-        let rate = wav[24..<28].withUnsafeBytes { $0.loadUnaligned(as: UInt32.self) }
-        XCTAssertEqual(UInt32(littleEndian: rate), 16_000)
     }
 
     // MARK: Round trips (real models, say → 16 kHz)
 
     private func speak(_ text: String) throws -> [Float] {
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("dayform-say-\(UUID().uuidString).wav")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("oatmeal-say-\(UUID().uuidString).wav")
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/usr/bin/say")
         p.arguments = ["-v", "Samantha", "-o", url.path, "--data-format=LEF32@16000", text]
@@ -147,18 +127,18 @@ final class SpeechModelTests: XCTestCase {
         XCTAssertTrue(out.contains("friday"), out)
     }
 
-    /// Opt in with TEST_RUNNER_DAYFORM_SPEECH_E2E=1 (downloads Whisper tiny).
+    /// Opt in with TEST_RUNNER_OATMEAL_SPEECH_E2E=1 (downloads Whisper tiny).
     func testWhisperTinyRoundTrip() async throws {
-        guard ProcessInfo.processInfo.environment["DAYFORM_SPEECH_E2E"] == "1" else { throw XCTSkip("Set DAYFORM_SPEECH_E2E=1") }
+        guard ProcessInfo.processInfo.environment["OATMEAL_SPEECH_E2E"] == "1" else { throw XCTSkip("Set OATMEAL_SPEECH_E2E=1") }
         WhisperVariant.selected = .tiny
         let out = try await roundTrip(.whisper).lowercased()
         XCTAssertTrue(out.contains("friday"), out)
     }
 
-    /// Opt in with TEST_RUNNER_DAYFORM_SPEECH_E2E=1 (needs the speech recognition plist key or macOS 26).
+    /// Opt in with TEST_RUNNER_OATMEAL_SPEECH_E2E=1 (needs the speech recognition plist key or macOS 26).
     func testAppleRoundTrip() async throws {
-        guard ProcessInfo.processInfo.environment["DAYFORM_SPEECH_E2E"] == "1", SpeechModel.apple.isSupported
-        else { throw XCTSkip("Set DAYFORM_SPEECH_E2E=1") }
+        guard ProcessInfo.processInfo.environment["OATMEAL_SPEECH_E2E"] == "1", SpeechModel.apple.isSupported
+        else { throw XCTSkip("Set OATMEAL_SPEECH_E2E=1") }
         let out = try await roundTrip(.apple).lowercased()
         XCTAssertTrue(out.contains("friday"), out)
     }

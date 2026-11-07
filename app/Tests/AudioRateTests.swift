@@ -1,6 +1,6 @@
 import XCTest
 import AVFoundation
-@testable import Dayform
+@testable import Oatmeal
 
 final class AudioRateTests: XCTestCase {
     func testSnapsToStandardRates() {
@@ -49,7 +49,7 @@ final class AudioRateTests: XCTestCase {
 /// tap still reports 48 kHz. Before the fix this came out as "What's up with the floor?".
 final class BluetoothRateTranscriptionTests: XCTestCase {
     func testTranscribesCallAudioAfterHeadsetRateDrop() async throws {
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("dayform-rate-\(UUID().uuidString).wav")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("oatmeal-rate-\(UUID().uuidString).wav")
         defer { try? FileManager.default.removeItem(at: url) }
         let say = Process()
         say.executableURL = URL(fileURLWithPath: "/usr/bin/say")

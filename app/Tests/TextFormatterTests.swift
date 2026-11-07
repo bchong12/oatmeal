@@ -1,8 +1,8 @@
 import XCTest
-@testable import Dayform
+@testable import Oatmeal
 
 final class TextFormatterTests: XCTestCase {
-    private let o = TextFormatter.Options(words: [DictionaryWord(heard: "supabase", written: "Supabase"), DictionaryWord(heard: "day form", written: "Dayform")],
+    private let o = TextFormatter.Options(words: [DictionaryWord(heard: "supabase", written: "Supabase"), DictionaryWord(heard: "oat meal", written: "Oatmeal")],
                                           snippets: [Snippet(cue: "my calendar link", text: "https://cal.com/branden")])
     private func f(_ s: String, _ k: TextFormatter.AppKind = .standard) -> String { TextFormatter.format(s, app: k, options: o) }
 
@@ -16,7 +16,7 @@ final class TextFormatterTests: XCTestCase {
     func testOneInSentenceIsNotAList() { XCTAssertEqual(f("One thing I noticed is the header."), "One thing I noticed is the header.") }
     func testSnippetInline() { XCTAssertEqual(f("Here is my calendar link if you want to book."), "Here is https://cal.com/branden if you want to book.") }
     func testSnippetAlone() { XCTAssertEqual(f("my calendar link"), "https://cal.com/branden") }
-    func testDictionary() { XCTAssertEqual(f("We moved the backend to supabase and day form."), "We moved the backend to Supabase and Dayform.") }
+    func testDictionary() { XCTAssertEqual(f("We moved the backend to supabase and oat meal."), "We moved the backend to Supabase and Oatmeal.") }
     func testLinksUntouched() { XCTAssertEqual(f("check example.com and email me at sam@acme.io"), "Check example.com and email me at sam@acme.io") }
     func testCasualDropsFullStop() { XCTAssertEqual(f("sounds good see you there.", .casual), "Sounds good see you there") }
     func testCodeCase() { XCTAssertEqual(f("rename it to camel case user profile view and run the tests.", .code), "Rename it to userProfileView and run the tests") }
@@ -28,14 +28,5 @@ final class TextFormatterTests: XCTestCase {
         XCTAssertEqual(TextFormatter.kind(for: "com.apple.MobileSMS"), .casual)
         XCTAssertEqual(TextFormatter.kind(for: "dev.warp.Warp-Stable"), .code)
         XCTAssertEqual(TextFormatter.kind(for: "com.apple.Notes"), .standard)
-    }
-}
-
-final class NextWeekdayTests: XCTestCase {
-    func testNextMondayFromSaturdayIsTwoDaysAway() {
-        var c = DateComponents(); c.year = 2026; c.month = 10; c.day = 17; c.hour = 10   // Saturday
-        let sat = Calendar.dayform.date(from: c)!
-        let d = QuickAddParser.nextDate(weekday: 2, from: sat, forceNextWeek: true)
-        XCTAssertEqual(Calendar.dayform.dateComponents([.day], from: Calendar.dayform.startOfDay(for: sat), to: d).day, 2)
     }
 }
