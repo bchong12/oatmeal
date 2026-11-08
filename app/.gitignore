@@ -3,3 +3,4 @@ DerivedData/
 Oatmeal.xcodeproj/
 .DS_Store
 Config/Signing.local.xcconfig
+Config/Site.local.xcconfig

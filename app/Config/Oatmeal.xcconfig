@@ -1,0 +1,9 @@
+// Build settings for Oatmeal. Signing lives in Signing.xcconfig.
+#include "Signing.xcconfig"
+
+// The site this build connects to for sign-in, plans and Oatmeal AI, e.g. https://oatmeal.whop.site.
+// Empty for the open-source build: nothing is locked, and a site's download page can still connect
+// the app with an oatmeal://connect link.
+OATMEAL_SITE =
+
+#include? "Site.local.xcconfig"

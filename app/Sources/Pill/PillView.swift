@@ -220,7 +220,8 @@ struct LevelWaves: View {
 private struct TranscribingPill: View {
     var body: some View {
         HStack(spacing: 10) {
-            DFSpinner(size: 13, color: .white)
+            // Dayform's spinner: the pill floats over other apps, so it keeps the system one.
+            ProgressView().controlSize(.small).tint(.white)
             Text("Writing it down…").font(DF.font(13, .semibold))
         }
         .padding(.horizontal, 20)

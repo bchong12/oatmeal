@@ -47,5 +47,7 @@
 	<string>Oatmeal turns what you say into text and meeting notes, transcribed on your Mac.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Oatmeal turns what you say into text with Apple's on-device speech recognition when you choose Apple Speech.</string>
+	<key>OatmealSite</key>
+	<string>$(OATMEAL_SITE)</string>
 </dict>
 </plist>

@@ -59,6 +59,7 @@ struct SettingsView: View {
     }
 
     @ViewBuilder private var general: some View {
+        AccountCard()
         NotesWriterCard()
         header("THE PILL")
         VStack(spacing: 0) {

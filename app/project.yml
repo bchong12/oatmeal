@@ -58,8 +58,8 @@ targets:
           OTHER_CODE_SIGN_FLAGS: "--timestamp"
           CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
     configFiles:
-      Debug: Config/Signing.xcconfig
-      Release: Config/Signing.xcconfig
+      Debug: Config/Oatmeal.xcconfig
+      Release: Config/Oatmeal.xcconfig
     dependencies:
       - package: FluidAudio
       - package: KeyboardShortcuts
@@ -76,6 +76,7 @@ targets:
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleIconFile: AppIcon
         LSApplicationCategoryType: public.app-category.productivity
+        OatmealSite: "$(OATMEAL_SITE)"
         ATSApplicationFontsPath: Fonts
         CFBundleURLTypes:
           - CFBundleURLName: com.oatmeal.app.links

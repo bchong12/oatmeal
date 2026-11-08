@@ -317,6 +317,11 @@ final class AppModel: ObservableObject {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
 
+    /// oatmeal:// links: a site connecting the app, and sign-in coming back from the browser.
+    func application(_ application: NSApplication, open urls: [URL]) {
+        Task { @MainActor in for url in urls { OatmealAccount.shared.handle(url) } }
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         setvbuf(stdout, nil, _IOLBF, 0)
         // Oatmeal is designed light. Without this, a Mac in dark mode draws native

@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+/* Oatmeal: oat cream paper, espresso for dark moments, honey for the one warm accent.
+   Same palette as the Mac app (Sources/Design/Theme.swift) and the Purist "Oatmeal · landing (fun)" design. */
+:root {
+  --cream: #fcf8ea;
+  --paper: #fffdf8;
+  --wash: #efe7cf;
+  --ink: #1c1915;
+  --muted: #6e665a;
+  --faint: #9c9488;
+  --line: rgba(28, 25, 21, 0.12);
+  --honey: #f6d27c;
+  --honey-deep: #d99a2b;
+  --espresso: #3b2a20;
+  --umber: #4a3426;
+  --oat: #e8dcc4;
+  --live: #e5555f;
+  --good: #2e7d55;
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-cream: var(--cream);
+  --color-paper: var(--paper);
+  --color-wash: var(--wash);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-honey: var(--honey);
+  --color-honey-deep: var(--honey-deep);
+  --color-espresso: var(--espresso);
+  --color-umber: var(--umber);
+  --color-oat: var(--oat);
+  --color-live: var(--live);
+  --color-good: var(--good);
+  --font-serif: "Young Serif", Georgia, serif;
+  --font-sans: Figtree, "Helvetica Neue", Arial, sans-serif;
+}
+
+html {
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--cream);
+}
+
+::selection {
+  background: var(--honey);
+  color: var(--ink);
+}
+
+/* The chunky honey button: ink border, hard offset shadow that presses in. */
+.btn-honey {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 10px;
+  background: var(--honey);
+  color: var(--ink);
+  border: 1.5px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  font-weight: 700;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.btn-honey:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0 var(--ink);
+}
+.btn-honey:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.btn-ink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 10px;
+  background: var(--ink);
+  color: #fff;
+  font-weight: 700;
+  transition: background 0.15s ease;
+}
+.btn-ink:hover {
+  background: #3a342c;
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1.5px solid var(--ink);
+  font-weight: 700;
+  transition: background 0.15s ease;
+}
+.btn-outline:hover {
+  background: var(--wash);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

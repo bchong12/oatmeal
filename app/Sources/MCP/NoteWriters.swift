@@ -1,26 +1,35 @@
 import Foundation
 import SwiftData
 
-/// The AI CLIs that can write a meeting's notes on this Mac, each on the user's own plan.
+/// Who can write a meeting's notes: the AI CLIs on this Mac, each on the user's own plan, or
+/// Oatmeal AI, which the connected site runs for Pro members.
 enum NoteWriterKind: String, CaseIterable, Identifiable, Sendable {
-    case claude, codex, gemini
+    case claude, codex, gemini, oatmeal
     var id: String { rawValue }
+    /// The ones that run as a command on this Mac.
+    static var clis: [NoteWriterKind] { [.claude, .codex, .gemini] }
     var title: String {
-        switch self { case .claude: "Claude Code"; case .codex: "Codex"; case .gemini: "Gemini CLI" }
+        switch self { case .claude: "Claude Code"; case .codex: "Codex"; case .gemini: "Gemini CLI"; case .oatmeal: "Oatmeal AI" }
     }
     var command: String { rawValue }
     var plan: String {
-        switch self { case .claude: "your Claude plan"; case .codex: "your ChatGPT plan"; case .gemini: "your Google account" }
+        switch self {
+        case .claude: "your Claude plan"
+        case .codex: "your ChatGPT plan"
+        case .gemini: "your Google account"
+        case .oatmeal: "your Pro plan"
+        }
     }
     /// Brand tile in Resources/Brand.
     var logo: String {
-        switch self { case .claude: "ai-claude"; case .codex: "ai-chatgpt"; case .gemini: "ai-gemini" }
+        switch self { case .claude: "ai-claude"; case .codex: "ai-chatgpt"; case .gemini: "ai-gemini"; case .oatmeal: "mark" }
     }
     var installHint: String {
         switch self {
         case .claude: "npm i -g @anthropic-ai/claude-code"
         case .codex: "npm i -g @openai/codex"
         case .gemini: "npm i -g @google/gemini-cli"
+        case .oatmeal: "Part of Pro, nothing to install"
         }
     }
 }
@@ -53,12 +62,14 @@ final class NoteWriters: ObservableObject {
         set { UserDefaults.standard.set(newValue?.rawValue, forKey: Self.writerKey); objectWillChange.send() }
     }
 
-    func isInstalled(_ k: NoteWriterKind) -> Bool { !(paths[k] ?? "").isEmpty }
+    func isInstalled(_ k: NoteWriterKind) -> Bool {
+        k == .oatmeal ? OatmealAccount.shared.me?.oatmealAI == true : !(paths[k] ?? "").isEmpty
+    }
 
-    /// The picked writer if it's installed, else the first one found.
+    /// The picked writer if it's ready, else the first CLI found, else Oatmeal AI.
     var active: NoteWriterKind? {
         if let p = preferred, isInstalled(p) { return p }
-        return NoteWriterKind.allCases.first(where: isInstalled)
+        return NoteWriterKind.clis.first(where: isInstalled) ?? (isInstalled(.oatmeal) ? .oatmeal : nil)
     }
 
     var available: Bool { active != nil }
@@ -96,8 +107,13 @@ final class NoteWriters: ObservableObject {
     func run(_ note: MeetingNote) {
         let id = note.id
         guard !running.contains(id) else { return }
-        guard MCPServer.shared.isRunning else { errors[id] = "Oatmeal\u{2019}s MCP server is off (Settings \u{203A} MCP)."; return }
-        guard active != nil else { errors[id] = "Install Claude Code, Codex or Gemini CLI to write notes on your own plan."; return }
+        guard let kind = active else {
+            errors[id] = OatmealAccount.shared.site == nil
+                ? "Install Claude Code, Codex or Gemini CLI to write notes on your own plan."
+                : "Install Claude Code, Codex or Gemini CLI, or get Oatmeal AI with Pro."
+            return
+        }
+        guard kind == .oatmeal || MCPServer.shared.isRunning else { errors[id] = "Oatmeal\u{2019}s MCP server is off (Settings \u{203A} MCP)."; return }
         errors[id] = nil
         running.insert(id)
         queue.append((id, Self.prompt(for: note)))
@@ -105,7 +121,9 @@ final class NoteWriters: ObservableObject {
     }
 
     private func next() {
-        guard !busy, !queue.isEmpty, let kind = active, let path = paths[kind] else { return }
+        guard !busy, !queue.isEmpty, let kind = active else { return }
+        if kind == .oatmeal { return nextHosted() }
+        guard let path = paths[kind] else { return }
         busy = true
         let (id, prompt) = queue.removeFirst()
         DFLog.log("notes", "\(kind.title) writing notes for \(id.uuidString) (\(queue.count) waiting)")
@@ -130,6 +148,45 @@ final class NoteWriters: ObservableObject {
                 me.next()
             }
         }
+    }
+
+    /// Oatmeal AI: the connected site writes the notes and they're saved here, no MCP involved.
+    private func nextHosted() {
+        busy = true
+        let (id, _) = queue.removeFirst()
+        DFLog.log("notes", "Oatmeal AI writing notes for \(id.uuidString) (\(queue.count) waiting)")
+        Task { @MainActor in
+            var failure: String?
+            if let note = Self.note(id) {
+                let segments = (try? JSONDecoder().decode([TranscriptSegment].self, from: note.transcriptData)) ?? []
+                do {
+                    let written = try await OatmealAccount.shared.writeNotes(
+                        title: note.title, startedAt: note.startedAt, attendees: note.attendees,
+                        transcript: segments.map { "\($0.speaker): \($0.text)" }.joined(separator: "\n"), myNotes: note.myNotes)
+                    note.notesMarkdown = written.notes
+                    if !written.title.isEmpty { note.title = written.title }
+                    if !written.summary.isEmpty { note.summary = written.summary }
+                    try? AppModel.shared.context.save()
+                } catch {
+                    failure = (error as? OatmealAccount.AccountError)?.message ?? "Sign in again in Settings \u{203A} General."
+                }
+            } else {
+                failure = "That meeting was deleted."
+            }
+            running.remove(id)
+            if let failure {
+                errors[id] = failure
+                DFLog.log("notes", "Oatmeal AI failed for \(id.uuidString): \(failure)")
+            } else {
+                DFLog.log("notes", "Oatmeal AI wrote notes for \(id.uuidString)")
+            }
+            busy = false
+            next()
+        }
+    }
+
+    private static func note(_ id: UUID) -> MeetingNote? {
+        try? AppModel.shared.context.fetch(FetchDescriptor<MeetingNote>(predicate: #Predicate { $0.id == id })).first
     }
 
     private func notesMissing(_ id: UUID) -> Bool {
@@ -157,6 +214,8 @@ final class NoteWriters: ObservableObject {
                      "-c", #"mcp_servers.oatmeal.default_tools_approval_mode="approve""#,
                      "-c", #"approval_policy="never""#,
                      prompt], tmp)
+        case .oatmeal:
+            return ([], tmp)   // Runs on the site, not as a command (see nextHosted).
         case .gemini:
             // Gemini reads MCP servers from .gemini/settings.json in its working folder. Shell and file
             // tools are switched off, so auto-approving only lets it use Oatmeal's meeting tools.
@@ -218,7 +277,7 @@ final class NoteWriters: ObservableObject {
     func locateAll() async {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         var found: [NoteWriterKind: String] = [:]
-        for k in NoteWriterKind.allCases {
+        for k in NoteWriterKind.clis {
             let c = k.command
             let known = ["/opt/homebrew/bin/\(c)", "/usr/local/bin/\(c)", "\(home)/.local/bin/\(c)", "\(home)/.npm-global/bin/\(c)", "\(home)/.claude/local/\(c)"]
             if let hit = known.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) { found[k] = hit; continue }

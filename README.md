@@ -27,6 +27,12 @@ tested end to end yet.
 Any other MCP client (Claude, ChatGPT, Cursor and so on) can use the same server to read and search
 your meetings. The tools are `list_meetings`, `get_meeting`, `update_meeting` and `search_dictations`.
 
+## The website
+
+`site/` is Oatmeal's website and a Whop blueprint: landing page, pricing, checkout, sign-in, and the
+API the Mac app uses to unlock Pro and Oatmeal AI. Anyone can deploy their own copy and sell Oatmeal;
+see [site/README.md](site/README.md).
+
 ## Features
 
 - On-device speech to text: Parakeet (default), Whisper, Qwen3-ASR or Apple Speech
@@ -59,8 +65,10 @@ permissions, sign with your own certificate: copy `app/Config/Signing.local.exam
 ## Layout
 
 ```
+site/           the website and Whop blueprint (TanStack Start on Whop hosting)
 app/
   Sources/
+    Account/    connecting to a site, signing in, the plan, Oatmeal AI
     App/        app entry, app state, logging
     Design/     colours, type, and Oatmeal's own controls (buttons, menus, dialogs, switches)
     MCP/        the local MCP server, its tools, and the Claude Code / Codex / Gemini note writers
