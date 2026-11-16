@@ -171,6 +171,8 @@ final class MCPServer: ObservableObject {
     action items, Granola-style notes, the user's own typed notes and a timestamped transcript (You = the user, \
     Them = the call). Meetings can be filed in folders.
     - Dictations: text the user spoke with Oatmeal Flow (hold right Option) and dropped into other apps.
+    - Captures: screenshots and screen recordings the user took to show you (fn Space, fn ⌘). When they say \
+    "look at this", "my screenshot" or "this recording", `get_capture` shows you the latest.
     Tips: `list_meetings` with a `query` finds the call where something came up; `get_meeting` reads it in full. \
     `update_meeting` saves a cleaned-up transcript, title, notes, summary and action items back; it never \
     changes the user's own notes. Dates are local time.

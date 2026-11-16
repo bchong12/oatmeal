@@ -341,6 +341,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             MCPServer.shared.start()
             CalendarStore.shared.refreshAuth()
             PillController.shared.start()
+            CaptureService.shared.start()
             self.installStatusItem()
             if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined { AppModel.shared.requestMic() }
             // Right ⌥ and typing into other apps both need Accessibility: ask once at launch.
@@ -383,6 +384,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         add("Open Oatmeal  (tap right ⌥)", #selector(openMain), "", [])
         add("Start or Stop Meeting Notes  (right ⌥ M)", #selector(toggleMeeting), "", [])
+        add("Screenshot for Your Agent  (fn Space)", #selector(takeScreenshot), "", [])
+        add("Start or Stop Recording  (fn ⌘)", #selector(toggleRecording), "", [])
+        add("Show Captures Folder", #selector(showCaptures), "", [])
         menu.addItem(.separator())
         let hint = NSMenuItem(title: "Hold right ⌥ to dictate · tap it to open Oatmeal", action: nil, keyEquivalent: "")
         hint.isEnabled = false
@@ -397,4 +401,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func openMain() { Task { @MainActor in AppModel.shared.open(.meetings) } }
     @objc private func toggleMeeting() { Task { @MainActor in HotkeyService.shared.onMeeting?() } }
     @objc private func togglePill() { Task { @MainActor in PillController.shared.toggleVisible() } }
+    @objc private func takeScreenshot() { Task { @MainActor in CaptureService.shared.screenshot() } }
+    @objc private func toggleRecording() { Task { @MainActor in CaptureService.shared.toggleRecording() } }
+    @objc private func showCaptures() {
+        Task { @MainActor in
+            try? FileManager.default.createDirectory(at: CaptureService.folder, withIntermediateDirectories: true)
+            NSWorkspace.shared.open(CaptureService.folder)
+        }
+    }
 }

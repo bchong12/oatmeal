@@ -53,6 +53,8 @@ final class PillController: ObservableObject {
         rk.onMeeting = { [weak self] in self?.toggleMeeting() }
         rk.onDoubleTap = { [weak self] in self?.startHandsFree() }
         rk.onPasteLast = { [weak self] in self?.pasteLast() }
+        rk.onScreenshot = { CaptureService.shared.screenshot() }
+        rk.onRecord = { CaptureService.shared.toggleRecording() }
         rk.tapIsImmediate = { [weak self] in self?.handsFree == true }
         rk.onEscape = { [weak self] in
             guard let self else { return false }

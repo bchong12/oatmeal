@@ -8,6 +8,10 @@ import os
 ///   hold, then T   → this dictation becomes a task instead
 ///   right ⌥ + M    → start or stop meeting notes
 ///
+/// It also hears fn for captures, clear of every voice key:
+///   fn + Space     → a screenshot for your agent
+///   fn + ⌘         → start or stop a screen recording
+///
 /// Needs an event tap (Accessibility), because ordinary hot keys can't tell
 /// the right Option key from the left one. Keys pressed with right ⌥ held are
 /// swallowed, so ⌥T / ⌥M don't type † or µ into the app underneath.
@@ -27,6 +31,10 @@ final class RightOptionKey {
     var onDoubleTap: (() -> Void)?
     /// Right ⌥ + V: paste the last dictation again.
     var onPasteLast: (() -> Void)?
+    /// fn + Space: a screenshot. fn + ⌘: start or stop a recording.
+    var onScreenshot: (() -> Void)?
+    var onRecord: (() -> Void)?
+
     /// Esc while listening. Return true to swallow the key.
     var onEscape: (() -> Bool)?
     /// While hands-free is on, a single tap should stop right away.
@@ -162,6 +170,19 @@ private func rightOptionCallback(proxy: CGEventTapProxy, type: CGEventType, even
     }
     let code = event.getIntegerValueField(.keyboardEventKeycode)
     let rightDown = RightOptionKey.isRightOptionDown(event.flags)
+    let fn = event.flags.contains(.maskSecondaryFn)
+    /* fn + ⌘ (either ⌘ going down while fn is held): start or stop a recording. */
+    if type == .flagsChanged, fn, code == 55 || code == 54, event.flags.contains(.maskCommand) {
+        DispatchQueue.main.async { MainActor.assumeIsolated { RightOptionKey.shared.onRecord?() } }
+        return Unmanaged.passUnretained(event)
+    }
+    /* fn + Space: a screenshot (the Space is swallowed, so nothing is typed). */
+    if code == 49, fn, !rightDown, type == .keyDown || type == .keyUp {
+        if type == .keyDown, event.getIntegerValueField(.keyboardEventAutorepeat) == 0 {
+            DispatchQueue.main.async { MainActor.assumeIsolated { RightOptionKey.shared.onScreenshot?() } }
+        }
+        return nil
+    }
     if type == .flagsChanged {
         guard code == RightOptionKey.rightOptionKeyCode else { return Unmanaged.passUnretained(event) }
         DispatchQueue.main.async { MainActor.assumeIsolated { RightOptionKey.shared.rightOption(down: rightDown) } }

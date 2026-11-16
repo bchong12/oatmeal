@@ -24,6 +24,8 @@ struct MCPTools {
             case "get_meeting": value = try getMeeting(args)
             case "update_meeting": value = try updateMeeting(args)
             case "search_dictations": value = try searchDictations(args)
+            case "list_captures": value = listCaptures(args)
+            case "get_capture": return try getCapture(args)
             default: throw MCPToolError("Unknown tool: \(name)")
             }
             return ["content": [["type": "text", "text": Self.pretty(value)]], "isError": false]
@@ -32,6 +34,35 @@ struct MCPTools {
         } catch {
             return ["content": [["type": "text", "text": "Oatmeal error: \(error.localizedDescription)"]], "isError": true]
         }
+    }
+
+    // MARK: Screenshots and recordings
+
+    private func captureInfo(_ c: Capture) -> [String: Any] {
+        var d: [String: Any] = ["id": c.id, "kind": c.kind == .shot ? "screenshot" : "recording", "path": c.url.path, "taken_at": Self.isoString(c.date)]
+        if let f = c.frames { d["frames_path"] = f.path }
+        return d
+    }
+
+    private func listCaptures(_ args: [String: Any]) -> Any {
+        let limit = max(1, min(Self.int(args["limit"]) ?? 10, 100))
+        let items = CaptureService.shared.all().prefix(limit).map(captureInfo)
+        return ["count": items.count, "folder": CaptureService.folder.path, "captures": Array(items)] as [String: Any]
+    }
+
+    /// The picture itself, so the agent sees it: a screenshot, or a recording's frames.
+    private func getCapture(_ args: [String: Any]) throws -> [String: Any] {
+        let all = CaptureService.shared.all()
+        let want = (args["id"] as? String)?.trimmingCharacters(in: .whitespaces) ?? ""
+        guard let c = want.isEmpty ? all.first : all.first(where: { $0.id == want }) else {
+            throw MCPToolError(want.isEmpty ? "No captures yet. The user takes a screenshot with fn Space and records with fn ⌘." : "No capture called \(want). list_captures lists them.")
+        }
+        var content: [[String: Any]] = [["type": "text", "text": Self.pretty(captureInfo(c))]]
+        if let pic = c.picture, let data = try? Data(contentsOf: pic) {
+            content.append(["type": "image", "data": data.base64EncodedString(), "mimeType": "image/png"])
+            if c.kind == .recording { content.append(["type": "text", "text": "This is the recording's frames, in order, each labelled with its time. The video itself is at path."]) }
+        }
+        return ["content": content, "isError": false]
     }
 
     // MARK: Meetings and dictation
@@ -243,6 +274,16 @@ extension MCPTools {
             "name": "get_meeting",
             "description": "One meeting in full: title, date, attendees, summary, action items, the user's own notes and the timestamped transcript (You = the user, Them = the call). Each transcript line is numbered, e.g. [#12 03:20], for update_meeting's transcript_edits.",
             "inputSchema": ["type": "object", "properties": ["id": ["type": "string", "description": "Meeting id from list_meetings."]], "required": ["id"]],
+        ],
+        [
+            "name": "get_capture",
+            "description": "A screenshot or screen recording the user took with Oatmeal (fn Space, fn ⌘), as a picture you can see: the latest one, or the one with `id`. A recording comes as its frames on one picture, labelled with their times, plus the video's path.",
+            "inputSchema": ["type": "object", "properties": ["id": ["type": "string", "description": "Capture id from list_captures (default: the latest)."]]],
+        ],
+        [
+            "name": "list_captures",
+            "description": "The user's Oatmeal screenshots and screen recordings, newest first, with their paths.",
+            "inputSchema": ["type": "object", "properties": ["limit": ["type": "integer", "description": "Max results (default 10)."]]],
         ],
         [
             "name": "search_dictations",
