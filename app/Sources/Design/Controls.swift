@@ -8,7 +8,7 @@ import AppKit
 
 enum DFButtonKind { case primary, secondary, ghost, honey, danger }
 
-/// `.buttonStyle(.df(.primary))`: ink, outlined paper, quiet ghost, the honey call to action, or red.
+/// `.buttonStyle(.df(.primary))`: ink, outlined paper, quiet ghost, or red. `.honey` is the main call to action, drawn in ink like Notion's.
 struct DFButtonStyle: ButtonStyle {
     var kind: DFButtonKind = .secondary
     var height: CGFloat = 30
@@ -31,7 +31,7 @@ struct DFButtonStyle: ButtonStyle {
                 .foregroundStyle(fg)
                 .padding(.horizontal, kind == .ghost ? 9 : 12).frame(height: height)
                 .background(bg, in: RoundedRectangle(cornerRadius: 8))
-                .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(border, lineWidth: kind == .honey ? 1.5 : 1))
+                .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(border, lineWidth: 1))
                 .opacity(enabled ? 1 : 0.4)
                 .scaleEffect(configuration.isPressed ? 0.97 : 1)
                 .contentShape(Rectangle())
@@ -41,7 +41,7 @@ struct DFButtonStyle: ButtonStyle {
 
         private var fg: Color {
             switch kind {
-            case .primary: .white
+            case .primary, .honey: .white
             case .danger: DF.tiredInk
             case .ghost: hover ? DF.ink : DF.muted
             default: DF.ink
@@ -49,10 +49,9 @@ struct DFButtonStyle: ButtonStyle {
         }
         private var bg: Color {
             switch kind {
-            case .primary: hover ? Color(hex: 0x3A342C) : DF.ink
-            case .secondary: hover ? Color(hex: 0xF7F1E1) : DF.paper
+            case .primary, .honey: hover ? Color(hex: 0x37352F) : DF.ink
+            case .secondary: hover ? Color(hex: 0xF7F7F5) : DF.paper
             case .ghost: hover ? DF.wash.opacity(0.75) : .clear
-            case .honey: hover ? Color(hex: 0xF9DC93) : DF.honey
             case .danger: hover ? DF.tiredBg : DF.paper
             }
         }
@@ -60,7 +59,6 @@ struct DFButtonStyle: ButtonStyle {
             switch kind {
             case .secondary: DF.line.opacity(1.6)
             case .danger: DF.tiredInk.opacity(0.25)
-            case .honey: DF.ink
             default: .clear
             }
         }
@@ -128,7 +126,7 @@ struct DFSwitchStyle: ToggleStyle {
             HStack(spacing: 10) {
                 configuration.label
                 ZStack(alignment: on ? .trailing : .leading) {
-                    Capsule().fill(on ? DF.ink : Color(hex: 0xDCD3BE))
+                    Capsule().fill(on ? DF.ink : Color(hex: 0xDDDCD8))
                     Circle().fill(.white).frame(width: 16, height: 16)
                         .shadow(color: .black.opacity(0.18), radius: 1.5, y: 1)
                         .padding(2)
@@ -154,7 +152,7 @@ struct DFRadio: View {
     let on: Bool
     var body: some View {
         ZStack {
-            Circle().strokeBorder(on ? DF.ink : Color(hex: 0xCFC6B2), lineWidth: 1.5)
+            Circle().strokeBorder(on ? DF.ink : Color(hex: 0xD3D1CB), lineWidth: 1.5)
             if on { Circle().fill(DF.ink).padding(4.5).transition(.scale) }
         }
         .frame(width: 18, height: 18)
@@ -168,7 +166,7 @@ struct DFCheck: View {
     var body: some View {
         RoundedRectangle(cornerRadius: 4.5)
             .fill(on ? DF.ink : DF.paper)
-            .overlay(RoundedRectangle(cornerRadius: 4.5).strokeBorder(on ? DF.ink : Color(hex: 0xCFC6B2), lineWidth: 1.5))
+            .overlay(RoundedRectangle(cornerRadius: 4.5).strokeBorder(on ? DF.ink : Color(hex: 0xD3D1CB), lineWidth: 1.5))
             .overlay { if on { Image(systemName: "checkmark").font(.system(size: 9, weight: .heavy)).foregroundStyle(.white) } }
             .frame(width: 16, height: 16)
     }
@@ -257,7 +255,7 @@ struct DFSelect<T: Hashable>: View {
                 Image(systemName: "chevron.up.chevron.down").font(.system(size: 9, weight: .bold)).foregroundStyle(DF.faint)
             }
             .padding(.horizontal, 10).frame(width: width, height: 30)
-            .background(hover ? Color(hex: 0xF7F1E1) : DF.paper, in: RoundedRectangle(cornerRadius: 8))
+            .background(hover ? Color(hex: 0xF7F7F5) : DF.paper, in: RoundedRectangle(cornerRadius: 8))
             .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(DF.line.opacity(1.6)))
             .contentShape(Rectangle())
         }
@@ -287,14 +285,16 @@ struct DFProgressBar: View {
 struct DFSpinner: View {
     var size: CGFloat = 14
     var color: Color = DF.ink
-    @State private var turn = false
     var body: some View {
-        Circle().trim(from: 0, to: 0.72)
-            .stroke(color, style: StrokeStyle(lineWidth: max(1.5, size / 8), lineCap: .round))
-            .frame(width: size, height: size)
-            .rotationEffect(.degrees(turn ? 360 : 0))
-            .animation(.linear(duration: 0.9).repeatForever(autoreverses: false), value: turn)
-            .onAppear { turn = true }
+        // The angle comes from the clock, not a repeating animation: a repeatForever animation also
+        // catches the row's own movement and drags the spinner out of place.
+        TimelineView(.animation) { ctx in
+            Circle().trim(from: 0, to: 0.72)
+                .stroke(color, style: StrokeStyle(lineWidth: max(1.5, size / 8), lineCap: .round))
+                .frame(width: size, height: size)
+                .rotationEffect(.degrees(ctx.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 0.9) / 0.9 * 360))
+        }
+        .frame(width: size, height: size)
     }
 }
 
@@ -537,7 +537,7 @@ private struct DFMenuView: View {
         .padding(5)
         .background(DF.paper, in: RoundedRectangle(cornerRadius: 11))
         .overlay(RoundedRectangle(cornerRadius: 11).strokeBorder(DF.line.opacity(1.4)))
-        .shadow(color: Color(hex: 0x3B2A20).opacity(0.14), radius: 18, y: 8)
+        .shadow(color: Color(hex: 0x000000).opacity(0.14), radius: 18, y: 8)
         .shadow(color: .black.opacity(0.05), radius: 2, y: 1)
     }
 }
@@ -606,7 +606,7 @@ private struct DialogCard: View {
         .frame(width: 400)
         .background(DF.paper, in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(DF.line))
-        .shadow(color: Color(hex: 0x3B2A20).opacity(0.16), radius: 22, y: 10)
+        .shadow(color: Color(hex: 0x000000).opacity(0.16), radius: 22, y: 10)
         .onAppear {
             text = dialog.field ?? ""
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { focused = true }

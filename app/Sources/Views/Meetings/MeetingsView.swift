@@ -53,6 +53,16 @@ private struct MeetingBrowser: View {
     @State private var picked: Set<UUID> = []
     @State private var anchor: UUID?
     @State private var fileTargeted = false
+    @State private var weekOnly = false
+
+    private enum ViewKind: Hashable { case all, recent, week }
+    private var viewKind: Binding<ViewKind> {
+        Binding(get: { isRecent ? (weekOnly ? .week : .recent) : .all }, set: { v in
+            weekOnly = v == .week
+            model.go(v == .all ? .folder(nil) : .recent)
+        })
+    }
+    private var topLevel: Bool { isRecent || here == nil }
 
     private var here: UUID? { if case .folder(let f) = model.place { return f }; return nil }
     private var isRecent: Bool { model.place == .recent }
@@ -74,6 +84,9 @@ private struct MeetingBrowser: View {
                     || n.attendees.joined(separator: " ").lowercased().contains(q)
                     || String(decoding: n.transcriptData, as: UTF8.self).lowercased().contains(q)
             }
+        } else if isRecent && weekOnly {
+            let start = Calendar.oatmeal.dateInterval(of: .weekOfYear, for: Date())!.start
+            base = allNotes.filter { $0.startedAt >= start }
         } else if isRecent {
             base = Array(allNotes.prefix(100))
         } else {
@@ -92,14 +105,16 @@ private struct MeetingBrowser: View {
     var body: some View {
         let list = notes
         let subs = subfolders
-        VStack(alignment: .leading, spacing: 0) {
-            header(count: list.count + subs.count)
-            columns
-            ZStack(alignment: .bottom) {
-                ScrollView(showsIndicators: false) {
+        ZStack(alignment: .bottom) {
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    header(count: list.count + subs.count)
+                    if topLevel && !searching { UpNextStrip().padding(.top, 22) }
+                    toolbar.padding(.top, 22).padding(.bottom, 6)
+                    columns
                     LazyVStack(alignment: .leading, spacing: 0) {
-                        if meeting.isRecording { LiveMeetingRow().padding(.horizontal, 16).padding(.vertical, 8) }
-                        if let job = importer.job { ImportRow(job: job).padding(.horizontal, 16).padding(.vertical, 8) }
+                        if meeting.isRecording { LiveMeetingRow().padding(.vertical, 8) }
+                        if let job = importer.job { ImportRow(job: job).padding(.vertical, 8) }
                         ForEach(subs) { f in
                             FolderListRow(folder: f, items: MeetingFolders.children(of: f.id, in: folders).count + allNotes.filter { $0.folderID == f.id }.count)
                         }
@@ -112,19 +127,20 @@ private struct MeetingBrowser: View {
                         }
                         emptyMessage(subs: subs, list: list)
                     }
-                    .padding(.bottom, picked.count > 1 ? 80 : 24)
                 }
+                .pageColumn(DF.tableWidth)
+                .padding(.top, 36).padding(.bottom, picked.count > 1 ? 80 : 40)
                 .background(Color.clear.contentShape(Rectangle()).dfContextMenu { backgroundMenu })
-                .overlay {
-                    if fileTargeted {
-                        RoundedRectangle(cornerRadius: 12).strokeBorder(DF.honeyDeep, style: StrokeStyle(lineWidth: 2, dash: [6, 5]))
-                            .background(DF.honey.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
-                            .overlay(Text("Drop a recording to transcribe it").font(DF.font(14, .semibold)).foregroundStyle(DF.umber))
-                            .padding(12).allowsHitTesting(false)
-                    }
-                }
-                if picked.count > 1 { selectionBar.padding(.bottom, 18).transition(.move(edge: .bottom).combined(with: .opacity)) }
             }
+            .overlay {
+                if fileTargeted {
+                    RoundedRectangle(cornerRadius: 12).strokeBorder(DF.honeyDeep, style: StrokeStyle(lineWidth: 2, dash: [6, 5]))
+                        .background(DF.honey.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+                        .overlay(Text("Drop a recording to transcribe it").font(DF.font(14, .semibold)).foregroundStyle(DF.umber))
+                        .padding(12).allowsHitTesting(false)
+                }
+            }
+            if picked.count > 1 { selectionBar.padding(.bottom, 18).transition(.move(edge: .bottom).combined(with: .opacity)) }
         }
         .background(DF.paper)
         .dropDestination(for: URL.self) { urls, _ in
@@ -137,41 +153,64 @@ private struct MeetingBrowser: View {
 
     // MARK: Header
 
-    private func header(count: Int) -> some View {
-        HStack(alignment: .center, spacing: 10) {
-            if isRecent {
-                Image(systemName: "clock").font(.system(size: 19, weight: .medium)).foregroundStyle(DF.muted)
-            } else if current != nil {
-                FolderGlyph(size: 24)
+    @ViewBuilder private func header(count: Int) -> some View {
+        if let current {
+            NotionHeader(icon: .symbol("folder"), title: current.name,
+                         description: "\(count) \(count == 1 ? "item" : "items")") { importButton }
+        } else {
+            NotionHeader(icon: .face("face-k"), title: "Meetings",
+                         description: "Every call you\u{2019}ve recorded, with notes written for you. Nothing leaves this Mac.") {
+                HStack(spacing: 8) {
+                    importButton
+                    Button { PillController.shared.toggleMeeting() } label: {
+                        HStack(spacing: 7) {
+                            Circle().fill(DF.now).frame(width: 7, height: 7)
+                            Text(meeting.isRecording ? "Stop" : "Record")
+                        }
+                    }
+                    .buttonStyle(.df(.primary, height: 32))
+                    .help("Record a meeting (\u{2318}N)")
+                }
             }
-            VStack(alignment: .leading, spacing: 1) {
-                Text(isRecent ? "Recent" : current?.name ?? "Meetings").font(DF.serif(30)).tracking(-0.6).lineLimit(1)
+        }
+    }
+
+    private var importButton: some View {
+        Button { importer.pickAndImport() } label: { Label("Import", systemImage: "arrow.down.to.line") }
+            .buttonStyle(.df(.secondary, height: 32)).disabled(importer.busy)
+            .help("Transcribe a recording: a voice memo, a Zoom file, a podcast. You can also drop one on the list.")
+    }
+
+    /// The views (at the top level), then search and a new-folder button.
+    private var toolbar: some View {
+        HStack(spacing: 8) {
+            if topLevel {
+                ViewTabs(items: [(ViewKind.all, "All meetings", "square.grid.2x2"), (.recent, "Recent", "clock"), (.week, "This week", "calendar")],
+                         selection: viewKind)
+            } else {
+                Text(searching ? "Searching everything" : "In this folder").font(DF.font(14, .medium)).foregroundStyle(DF.muted)
             }
-            Text(searching ? "Searching everything" : "\(count) \(count == 1 ? "item" : "items")")
-                .font(DF.font(13)).foregroundStyle(DF.faint).padding(.top, 6)
-            Spacer(minLength: 12)
-            SearchField(text: $query, prompt: "Search meetings").frame(width: 220)
+            Spacer(minLength: 8)
             if !isRecent {
                 Button { newFolder() } label: { Image(systemName: "folder.badge.plus") }
-                    .buttonStyle(.dfIcon(size: 32))
+                    .buttonStyle(.dfIcon(size: 30))
                     .help("New folder")
             }
-            Button { importer.pickAndImport() } label: { Label("Import", systemImage: "arrow.down.to.line") }
-                .buttonStyle(.df(.secondary, height: 32)).disabled(importer.busy)
-                .help("Transcribe a recording: a voice memo, a Zoom file, a podcast. You can also drop one on the list.")
+            SearchField(text: $query, prompt: "Search meetings").frame(width: 220)
         }
-        .padding(.horizontal, 28).padding(.top, 22).padding(.bottom, 16)
     }
 
     private var columns: some View {
         HStack(spacing: 0) {
             column("Name", .name).frame(maxWidth: .infinity, alignment: .leading)
-            column("People", .people).frame(width: 170, alignment: .leading)
-            column("Date", .date).frame(width: 150, alignment: .leading)
-            column("Length", .length).frame(width: 70, alignment: .trailing)
+            column("People", .people).frame(width: 150, alignment: .leading)
+            Text("Notes").font(DF.font(13, .medium)).foregroundStyle(DF.faint).frame(width: 96, alignment: .leading)
+            column("Date", .date).frame(width: 130, alignment: .leading)
+            column("Length", .length).frame(width: 64, alignment: .trailing)
         }
-        .padding(.horizontal, 28).frame(height: 30)
-        .overlay(alignment: .bottom) { Rectangle().fill(DF.line).frame(height: 1).padding(.horizontal, 16) }
+        .frame(height: 34)
+        .overlay(alignment: .top) { Hairline() }
+        .overlay(alignment: .bottom) { Hairline() }
     }
 
     private func column(_ title: String, _ key: SortKey) -> some View {
@@ -182,7 +221,7 @@ private struct MeetingBrowser: View {
             }
         } label: {
             HStack(spacing: 4) {
-                Text(title).font(DF.font(12, on ? .semibold : .medium)).foregroundStyle(on ? DF.ink : DF.faint)
+                Text(title).font(DF.font(13, .medium)).foregroundStyle(on ? DF.muted : DF.faint)
                 if on { Image(systemName: ascending ? "chevron.up" : "chevron.down").font(.system(size: 8, weight: .bold)).foregroundStyle(DF.muted) }
             }
             .contentShape(Rectangle())
@@ -404,11 +443,11 @@ struct MeetingGlyph: View {
     var body: some View {
         RoundedRectangle(cornerRadius: size * 0.16)
             .fill(Color.white)
-            .overlay(RoundedRectangle(cornerRadius: size * 0.16).strokeBorder(Color(hex: 0xCFC6B2), lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: size * 0.16).strokeBorder(Color(hex: 0xD3D1CB), lineWidth: 1))
             .overlay(alignment: .top) {
                 VStack(alignment: .leading, spacing: size * 0.11) {
                     ForEach(0..<3, id: \.self) { i in
-                        Capsule().fill(i == 0 ? DF.honeyDeep : Color(hex: 0xD6CEBC)).frame(width: size * (i == 2 ? 0.34 : 0.5), height: max(1, size * 0.07))
+                        Capsule().fill(i == 0 ? DF.honeyDeep : Color(hex: 0xD3D1CB)).frame(width: size * (i == 2 ? 0.34 : 0.5), height: max(1, size * 0.07))
                     }
                 }
                 .padding(.top, size * 0.24)
@@ -431,15 +470,16 @@ private struct FolderListRow: View {
                 if model.renaming?.id == folder.id && model.renaming?.inSidebar == false {
                     FolderNameField(folder: folder).frame(maxWidth: 280)
                 } else {
-                    Text(folder.name).font(DF.font(14, .semibold)).foregroundStyle(DF.ink).lineLimit(1)
+                    Text(folder.name).font(DF.font(15, .medium)).foregroundStyle(DF.ink).lineLimit(1)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            Text("\u{2014}").frame(width: 170, alignment: .leading)
-            Text("\(items) \(items == 1 ? "item" : "items")").frame(width: 150, alignment: .leading)
-            Image(systemName: "chevron.right").font(.system(size: 9, weight: .bold)).frame(width: 70, alignment: .trailing)
+            Text("\u{2014}").foregroundStyle(DF.faint).frame(width: 150, alignment: .leading)
+            Color.clear.frame(width: 96)
+            Text("\(items) \(items == 1 ? "item" : "items")").frame(width: 130, alignment: .leading)
+            Image(systemName: "chevron.right").font(.system(size: 9, weight: .bold)).foregroundStyle(DF.faint).frame(width: 64, alignment: .trailing)
         }
-        .font(DF.font(13)).foregroundStyle(DF.muted)
+        .font(DF.font(14)).foregroundStyle(DF.muted)
         .modifier(ListRowChrome(hover: hover, picked: false, targeted: targeted))
         .onHover { hover = $0 }
         .onTapGesture { model.go(.folder(folder.id)) }
@@ -467,28 +507,32 @@ private struct MeetingListRow: View {
         HStack(spacing: 0) {
             HStack(spacing: 10) {
                 MeetingGlyph(size: 18)
-                Text(note.title).font(DF.font(14, .semibold)).foregroundStyle(DF.ink).lineLimit(1)
+                Text(note.title).font(DF.font(15, .medium)).foregroundStyle(DF.ink).lineLimit(1)
                 if locked {
                     Label("Pro", systemImage: "lock.fill").labelStyle(DFLabelStyle()).font(DF.font(11, .bold)).foregroundStyle(DF.ink)
                         .padding(.horizontal, 7).frame(height: 18).background(DF.honey.opacity(0.7), in: Capsule())
-                } else if writers.running.contains(note.id) {
-                    HStack(spacing: 5) { DFSpinner(size: 10, color: DF.muted); Text("Writing notes").font(DF.font(12)) }
-                        .foregroundStyle(DF.muted)
-                } else if note.notesMarkdown.isEmpty && note.summary.isEmpty {
-                    Text("No notes").font(DF.font(11, .semibold)).foregroundStyle(DF.faint)
-                        .padding(.horizontal, 6).frame(height: 18).background(DF.wash.opacity(0.7), in: Capsule())
                 }
                 if let path, !path.isEmpty {
                     HStack(spacing: 4) { FolderGlyph(size: 11); Text(path).lineLimit(1) }
-                        .font(DF.font(12)).foregroundStyle(DF.faint)
+                        .font(DF.font(13)).foregroundStyle(DF.faint)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            Text(note.attendees.isEmpty ? "\u{2014}" : note.attendees.joined(separator: ", ")).lineLimit(1).frame(width: 170, alignment: .leading)
-            Text(Self.when(note.startedAt)).lineLimit(1).frame(width: 150, alignment: .leading)
-            Text("\(max(1, Int((note.duration / 60).rounded()))) min").monospacedDigit().frame(width: 70, alignment: .trailing)
+            Group {
+                if note.attendees.isEmpty { Text("\u{2014}").foregroundStyle(DF.faint) }
+                else { InitialsStack(names: note.attendees) }
+            }
+            .frame(width: 150, alignment: .leading)
+            Group {
+                if writers.running.contains(note.id) { NotionTag(text: "Writing\u{2026}", tone: .yellow, spinner: true) }
+                else if note.notesMarkdown.isEmpty && note.summary.isEmpty { NotionTag(text: "No notes") }
+                else { NotionTag(text: "Written", tone: .green) }
+            }
+            .frame(width: 96, alignment: .leading)
+            Text(Self.when(note.startedAt)).lineLimit(1).frame(width: 130, alignment: .leading)
+            Text("\(max(1, Int((note.duration / 60).rounded()))) min").monospacedDigit().frame(width: 64, alignment: .trailing)
         }
-        .font(DF.font(13)).foregroundStyle(DF.muted)
+        .font(DF.font(14)).foregroundStyle(DF.muted)
         .opacity(locked ? 0.55 : 1)
         .modifier(ListRowChrome(hover: hover, picked: picked, targeted: false))
         .onHover { hover = $0 }
@@ -497,10 +541,10 @@ private struct MeetingListRow: View {
     static func when(_ d: Date) -> String {
         let cal = Calendar.current
         let time = d.formatted(date: .omitted, time: .shortened)
-        if cal.isDateInToday(d) { return "Today, \(time)" }
-        if cal.isDateInYesterday(d) { return "Yesterday, \(time)" }
+        if cal.isDateInToday(d) { return "Today \u{00B7} \(time)" }
+        if cal.isDateInYesterday(d) { return "Yesterday" }
         if let days = cal.dateComponents([.day], from: cal.startOfDay(for: d), to: cal.startOfDay(for: Date())).day, days < 7 {
-            return d.formatted(.dateTime.weekday(.wide)) + ", " + time
+            return d.formatted(.dateTime.weekday(.wide))
         }
         return cal.isDate(d, equalTo: Date(), toGranularity: .year)
             ? d.formatted(.dateTime.month(.abbreviated).day()) : d.formatted(.dateTime.month(.abbreviated).day().year())
@@ -514,15 +558,16 @@ private struct ListRowChrome: ViewModifier {
     let targeted: Bool
     func body(content: Content) -> some View {
         content
-            .padding(.horizontal, 12).frame(height: 44)
+            .frame(height: 44)
+            .overlay(alignment: .bottom) { Hairline() }
+            .padding(.horizontal, 8)
             .background(
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 6)
                     .fill(targeted ? DF.honey.opacity(0.45) : picked ? DF.honey.opacity(0.28) : hover ? DF.canvas : .clear)
-                    .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(targeted ? DF.honeyDeep : .clear, lineWidth: 1.5))
+                    .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(targeted ? DF.honeyDeep : .clear, lineWidth: 1.5))
             )
-            .overlay(alignment: .bottom) { Rectangle().fill(DF.line.opacity(0.6)).frame(height: 1).padding(.horizontal, 12) }
             .contentShape(Rectangle())
-            .padding(.horizontal, 16)
+            .padding(.horizontal, -8)
     }
 }
 
@@ -632,9 +677,10 @@ struct MeetingDetail: View {
         let writing = writers.running.contains(note.id)
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
+                PageIcon(art: .meeting).padding(.bottom, 14)
                 HStack(alignment: .top, spacing: 12) {
                     TextField("Untitled meeting", text: $note.title, axis: .vertical)
-                        .textFieldStyle(.plain).font(DF.serif(32)).tracking(-0.6)
+                        .textFieldStyle(.plain).font(DF.font(40, .bold)).tracking(-0.8)
                     Button {
                         Popups.shared.showMenu(MeetingMenu.items(for: note, all: allNotes, model: model), below: moreFrame, width: 230)
                     } label: { Image(systemName: "ellipsis").font(.system(size: 14, weight: .semibold)) }
@@ -643,13 +689,29 @@ struct MeetingDetail: View {
                     .padding(.top, 4)
                     .help("More")
                 }
-                HStack(spacing: 6) {
-                    meta("calendar", note.startedAt.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute()))
-                    meta("clock", "\(max(1, Int((note.duration / 60).rounded()))) min")
-                    if !note.attendees.isEmpty { meta("person.2", note.attendees.joined(separator: ", ")) }
-                    MeetingFolderChip(note: note)
+                VStack(alignment: .leading, spacing: 2) {
+                    property("calendar", "When") {
+                        Text(note.startedAt.formatted(.dateTime.weekday(.wide).month(.abbreviated).day().hour().minute())
+                             + " \u{00B7} \(max(1, Int((note.duration / 60).rounded()))) min")
+                            .font(DF.font(15)).foregroundStyle(DF.ink)
+                    }
+                    if !note.attendees.isEmpty {
+                        property("person.2", "People") {
+                            HStack(spacing: 6) {
+                                ForEach(note.attendees.prefix(6), id: \.self) { a in
+                                    HStack(spacing: 6) {
+                                        InitialsStack(names: [a], size: 18)
+                                        Text(a).font(DF.font(14)).lineLimit(1)
+                                    }
+                                    .padding(.leading, 3).padding(.trailing, 8).frame(height: 24)
+                                    .background(DF.wash, in: Capsule())
+                                }
+                            }
+                        }
+                    }
+                    property("folder", "Folder") { MeetingFolderChip(note: note).padding(.leading, -7) }
                 }
-                .padding(.top, 10)
+                .padding(.top, 18)
 
                 HStack(alignment: .bottom) {
                     DFTabs(items: [(0, "Notes"), (2, "My notes"), (1, "Transcript")], selection: $tab)
@@ -680,7 +742,7 @@ struct MeetingDetail: View {
                     }
                     .padding(.bottom, 6)
                 }
-                .padding(.top, 26)
+                .padding(.top, 22)
                 .overlay(alignment: .bottom) { Rectangle().fill(DF.line).frame(height: 1) }
                 .padding(.bottom, 24)
 
@@ -688,12 +750,26 @@ struct MeetingDetail: View {
                     if tab == 2 { myNotes } else if tab == 0 { notesTab(writing: writing) } else { transcript }
                 }
             }
-            .padding(.horizontal, 40).padding(.top, 34).padding(.bottom, 40)
-            .frame(maxWidth: 800, alignment: .leading)
-            .frame(maxWidth: .infinity)
+            .pageColumn()
+            .padding(.top, 36).padding(.bottom, 48)
         }
         .frame(maxWidth: .infinity)
         .background(DF.paper)
+    }
+
+    /// A Notion property: icon and name on the left, its value beside them.
+    private func property<V: View>(_ icon: String, _ name: String, @ViewBuilder _ value: () -> V) -> some View {
+        HStack(alignment: .center, spacing: 0) {
+            HStack(spacing: 8) {
+                Image(systemName: icon).font(.system(size: 12)).frame(width: 16)
+                Text(name).font(DF.font(15))
+            }
+            .foregroundStyle(DF.muted)
+            .frame(width: 150, alignment: .leading)
+            value()
+            Spacer(minLength: 0)
+        }
+        .frame(minHeight: 32)
     }
 
     private func meta(_ icon: String, _ text: String) -> some View {
@@ -750,7 +826,22 @@ struct MeetingDetail: View {
                 }
             }
         } else if !meetingNotes.isEmpty {
-            GranolaNotes(markdown: meetingNotes)
+            if !note.summary.isEmpty {
+                HStack(alignment: .top, spacing: 12) {
+                    Text("\u{1F4A1}").font(.system(size: 17))
+                    Text(note.summary.map { l in let t = l.trimmingCharacters(in: .whitespaces); return t.last.map { ".!?".contains($0) } == true ? t : t + "." }.joined(separator: " ")).font(DF.font(16)).lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
+                }
+                .padding(.horizontal, 16).padding(.vertical, 14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(DF.canvas, in: RoundedRectangle(cornerRadius: 6))
+                .padding(.bottom, 22)
+            }
+            if !note.notesMarkdown.isEmpty {
+                GranolaNotes(markdown: note.notesMarkdown) { i in note.notesMarkdown = GranolaNotes.toggle(line: i, in: note.notesMarkdown) }
+            } else if !note.actionItems.isEmpty {
+                GranolaNotes(markdown: "### Next steps\n" + note.actionItems.map { "- [ ] \($0)" }.joined(separator: "\n"))
+            }
         }
     }
 
@@ -840,42 +931,99 @@ struct ModelBadge: View {
     }
 }
 
-/// Granola-style notes: short topic headings with terse bullets. Reads the light markdown in
-/// `MeetingNote.notesMarkdown` (`### Heading`, `- bullet`, `  - detail`, **bold** inline).
+/// Granola-style notes, drawn the way Notion draws a page: headings, small ink bullets, and to-dos.
+/// Reads the light markdown in `MeetingNote.notesMarkdown` (`### Heading`, `- bullet`, `  - detail`,
+/// `- [ ] to-do`, **bold** inline). Bullets under a "Next steps" or "Action items" heading are to-dos.
+/// With `onToggle`, ticking a to-do hands back its line so the caller can save it.
 struct GranolaNotes: View {
     let markdown: String
+    var onToggle: ((Int) -> Void)? = nil
 
-    private enum Line: Hashable { case heading(String), bullet(String, depth: Int), text(String) }
+    private enum Kind: Hashable { case heading(String), bullet(String, depth: Int), todo(String, done: Bool, depth: Int), text(String) }
+    private struct Line: Hashable { let index: Int; let kind: Kind }
 
     private var lines: [Line] {
-        markdown.split(separator: "\n", omittingEmptySubsequences: true).compactMap { raw in
-            let indent = raw.prefix { $0 == " " || $0 == "\t" }.reduce(0) { $0 + ($1 == "\t" ? 2 : 1) }
-            let t = raw.trimmingCharacters(in: .whitespaces)
-            if t.isEmpty { return nil }
-            if t.hasPrefix("#") { return .heading(t.drop { $0 == "#" }.trimmingCharacters(in: .whitespaces)) }
-            for marker in ["- ", "* ", "• "] where t.hasPrefix(marker) {
-                return .bullet(String(t.dropFirst(marker.count)), depth: min(indent / 2, 2))
+        var out: [Line] = []
+        var inSteps = false
+        for (i, raw) in markdown.components(separatedBy: "\n").enumerated() {
+            if let k = Self.parse(raw, inSteps: inSteps) {
+                if case .heading(let h) = k { inSteps = Self.isSteps(h) }
+                out.append(Line(index: i, kind: k))
             }
-            return .text(t)
         }
+        return out
+    }
+
+    static func isSteps(_ h: String) -> Bool {
+        let l = h.lowercased()
+        return l.contains("next step") || l.contains("action item") || l.contains("to-do") || l.contains("todo")
+    }
+
+    private static func parse(_ raw: String, inSteps: Bool) -> Kind? {
+        let indent = raw.prefix { $0 == " " || $0 == "\t" }.reduce(0) { $0 + ($1 == "\t" ? 2 : 1) }
+        let t = raw.trimmingCharacters(in: .whitespaces)
+        if t.isEmpty { return nil }
+        if t.hasPrefix("#") { return .heading(t.drop { $0 == "#" }.trimmingCharacters(in: .whitespaces)) }
+        for marker in ["- ", "* ", "\u{2022} "] where t.hasPrefix(marker) {
+            let body = String(t.dropFirst(marker.count))
+            let depth = min(indent / 2, 2)
+            if body.hasPrefix("[ ] ") { return .todo(String(body.dropFirst(4)), done: false, depth: depth) }
+            if body.lowercased().hasPrefix("[x] ") { return .todo(String(body.dropFirst(4)), done: true, depth: depth) }
+            return inSteps && depth == 0 ? .todo(body, done: false, depth: 0) : .bullet(body, depth: depth)
+        }
+        return .text(t)
+    }
+
+    /// Ticks or unticks the to-do on line `i`.
+    static func toggle(line i: Int, in markdown: String) -> String {
+        var rows = markdown.components(separatedBy: "\n")
+        guard rows.indices.contains(i) else { return markdown }
+        let raw = rows[i]
+        let lead = String(raw.prefix { $0 == " " || $0 == "\t" })
+        var t = raw.trimmingCharacters(in: .whitespaces)
+        guard let marker = ["- ", "* ", "\u{2022} "].first(where: { t.hasPrefix($0) }) else { return markdown }
+        t = String(t.dropFirst(marker.count))
+        if t.hasPrefix("[ ] ") { t = "[x] " + t.dropFirst(4) }
+        else if t.lowercased().hasPrefix("[x] ") { t = "[ ] " + t.dropFirst(4) }
+        else { t = "[x] " + t }
+        rows[i] = lead + "- " + t
+        return rows.joined(separator: "\n")
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            ForEach(Array(lines.enumerated()), id: \.offset) { i, line in
-                switch line {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(Array(lines.enumerated()), id: \.element) { n, line in
+                switch line.kind {
                 case .heading(let h):
-                    Text(h).font(DF.serif(21)).padding(.top, i == 0 ? 0 : 18).padding(.bottom, 2)
+                    Text(h).font(DF.font(22, .semibold)).tracking(-0.3).padding(.top, n == 0 ? 0 : 20).padding(.bottom, 2)
                 case .bullet(let b, let depth):
                     HStack(alignment: .firstTextBaseline, spacing: 10) {
-                        Circle().fill(depth == 0 ? DF.honeyDeep : DF.faint).frame(width: 5, height: 5).offset(y: -2)
-                        Text(Self.inline(b)).font(DF.font(15)).foregroundStyle(depth == 0 ? DF.ink : DF.muted)
-                            .lineSpacing(2)
-                            .fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
+                        Group {
+                            if depth == 0 { Circle().fill(DF.ink) } else { Circle().strokeBorder(DF.ink, lineWidth: 1) }
+                        }
+                        .frame(width: 5, height: 5).offset(y: -3).frame(width: 14)
+                        Text(Self.inline(b)).font(DF.font(16)).foregroundStyle(DF.ink)
+                            .lineSpacing(3).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
                     }
-                    .padding(.leading, CGFloat(depth) * 18)
+                    .padding(.leading, CGFloat(depth) * 24)
+                case .todo(let b, let done, let depth):
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Button { onToggle?(line.index) } label: {
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(done ? DF.ink : .clear)
+                                .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(done ? DF.ink : DF.ink.opacity(0.55), lineWidth: 1.4))
+                                .overlay { if done { Image(systemName: "checkmark").font(.system(size: 9, weight: .bold)).foregroundStyle(.white) } }
+                                .frame(width: 15, height: 15).offset(y: 2)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain).disabled(onToggle == nil)
+                        Text(Self.inline(b)).font(DF.font(16))
+                            .foregroundStyle(done ? DF.faint : DF.ink).strikethrough(done, color: DF.faint)
+                            .lineSpacing(3).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
+                    }
+                    .padding(.leading, CGFloat(depth) * 24)
                 case .text(let t):
-                    Text(Self.inline(t)).font(DF.font(15)).lineSpacing(2).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
+                    Text(Self.inline(t)).font(DF.font(16)).lineSpacing(3).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
                 }
             }
         }
@@ -884,5 +1032,63 @@ struct GranolaNotes: View {
 
     static func inline(_ s: String) -> AttributedString {
         (try? AttributedString(markdown: s, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(s)
+    }
+}
+
+/// Your next calendar meeting today: when it starts, and a switch to record it when it does.
+private struct UpNextStrip: View {
+    @EnvironmentObject var calendars: CalendarStore
+    @ObservedObject private var meeting = MeetingService.shared
+    @AppStorage("autoRecordIDs") private var autoRecordRaw = ""
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 30)) { ctx in
+            if let e = next(at: ctx.date) { strip(e, now: ctx.date) }
+        }
+    }
+
+    private func next(at now: Date) -> CalEvent? {
+        guard calendars.anyConnected else { return nil }
+        return calendars.events(on: now).filter { !$0.isAllDay && $0.end > now && $0.start < now.addingTimeInterval(4 * 3600) }
+            .min { $0.start < $1.start }
+    }
+
+    private func strip(_ e: CalEvent, now: Date) -> some View {
+        let started = e.start <= now
+        let mins = max(1, Int((e.start.timeIntervalSince(now) / 60).rounded(.up)))
+        let auto = autoRecordRaw.split(separator: "|").contains(Substring(e.id))
+        let when = started ? "Happening now" : mins < 60 ? "Up next \u{00B7} in \(mins) min" : "Up next \u{00B7} at \(e.start.formatted(date: .omitted, time: .shortened))"
+        return HStack(spacing: 12) {
+            RoundedRectangle(cornerRadius: 2).fill(Color(hex: e.colorHex == 0 ? 0x2F80ED : e.colorHex)).frame(width: 3, height: 38)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(when).font(DF.font(13, .medium)).foregroundStyle(started ? DF.now : DF.muted)
+                HStack(spacing: 8) {
+                    Text(e.title).font(DF.font(15, .semibold)).lineLimit(1)
+                    Text("\(e.start.formatted(date: .omitted, time: .shortened)) \u{2013} \(e.end.formatted(date: .omitted, time: .shortened)) \u{00B7} \(e.calendarTitle)")
+                        .font(DF.font(14)).foregroundStyle(DF.muted).lineLimit(1)
+                }
+            }
+            Spacer(minLength: 12)
+            if started {
+                if !meeting.isRecording {
+                    Button { PillController.shared.toggleMeeting() } label: {
+                        HStack(spacing: 7) { Circle().fill(DF.now).frame(width: 7, height: 7); Text("Record now") }
+                    }
+                    .buttonStyle(.df(.secondary, height: 30))
+                }
+            } else {
+                Button {
+                    var ids = Set(autoRecordRaw.split(separator: "|").map(String.init))
+                    if auto { ids.remove(e.id) } else { ids.insert(e.id) }
+                    autoRecordRaw = ids.joined(separator: "|")
+                } label: {
+                    if auto { Label("Records when it starts", systemImage: "checkmark") } else { Text("Record when it starts") }
+                }
+                .buttonStyle(.df(.secondary, height: 30))
+                .help(auto ? "Click to stop recording this one automatically" : "Oatmeal starts taking notes when the meeting starts")
+            }
+        }
+        .padding(.horizontal, 14).padding(.vertical, 11)
+        .background(DF.canvas, in: RoundedRectangle(cornerRadius: 8))
     }
 }

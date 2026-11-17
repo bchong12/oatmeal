@@ -1,14 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Shell } from '#/components/site/Shell'
 import { Closing } from '#/components/landing/Closing'
-import { Faster } from '#/components/landing/Faster'
+import { Features } from '#/components/landing/Features'
 import { Hero } from '#/components/landing/Hero'
-import { Notes } from '#/components/landing/Notes'
 import { Pricing } from '#/components/landing/Pricing'
 import { LandingStyles } from '#/components/landing/shared'
 import { YourAI } from '#/components/landing/YourAI'
 
-// The landing page, built from the Purist design "Oatmeal · landing (fun)".
+// The landing page, Notion-style, from the Purist "Capture" frames and notion.com.
 export const Route = createFileRoute('/')({
   component: Landing,
 })
@@ -19,8 +18,7 @@ function Landing() {
       <LandingStyles />
       <div className="oat-landing overflow-x-clip">
         <Hero />
-        <Faster />
-        <Notes />
+        <Features />
         <YourAI />
         <Pricing />
         <Closing />

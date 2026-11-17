@@ -237,7 +237,7 @@ struct FolderGlyph: View {
                 .frame(width: size * 0.46, height: size * 0.3)
                 .offset(y: size * 0.1)
             RoundedRectangle(cornerRadius: size * 0.14)
-                .fill(LinearGradient(colors: [Color(hex: 0xF8D98C), DF.honey], startPoint: .top, endPoint: .bottom))
+                .fill(LinearGradient(colors: [Color(hex: 0xFBE7B0), DF.honey], startPoint: .top, endPoint: .bottom))
                 .overlay(RoundedRectangle(cornerRadius: size * 0.14).strokeBorder(DF.honeyDeep.opacity(0.55), lineWidth: 0.75))
                 .frame(width: size, height: size * 0.68)
                 .offset(y: size * 0.22)

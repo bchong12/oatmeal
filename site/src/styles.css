@@ -1,21 +1,21 @@
 @import "tailwindcss";
 
-/* Oatmeal: oat cream paper, espresso for dark moments, honey for the one warm accent.
-   Same palette as the Mac app (Sources/Design/Theme.swift) and the Purist "Oatmeal · landing (fun)" design. */
+/* Oatmeal, Notion-style: ink on white, warm greys for wells, honey only as a highlight.
+   Same palette as the Mac app (Sources/Design/Theme.swift) and the Purist "Capture" frames. */
 :root {
-  --cream: #fcf8ea;
-  --paper: #fffdf8;
-  --wash: #efe7cf;
-  --ink: #1c1915;
-  --muted: #6e665a;
-  --faint: #9c9488;
-  --line: rgba(28, 25, 21, 0.12);
-  --honey: #f6d27c;
-  --honey-deep: #d99a2b;
-  --espresso: #3b2a20;
-  --umber: #4a3426;
-  --oat: #e8dcc4;
-  --live: #e5555f;
+  --cream: #ffffff;
+  --paper: #ffffff;
+  --wash: #f1f1ef;
+  --ink: #191919;
+  --muted: #787774;
+  --faint: #9b9a97;
+  --line: rgba(0, 0, 0, 0.09);
+  --honey: #fcebc2;
+  --honey-deep: #f2b43a;
+  --espresso: #191919;
+  --umber: #37352f;
+  --oat: #f7f7f5;
+  --live: #eb5757;
   --good: #2e7d55;
   color-scheme: light;
 }
@@ -35,8 +35,8 @@
   --color-oat: var(--oat);
   --color-live: var(--live);
   --color-good: var(--good);
-  --font-serif: "Young Serif", Georgia, serif;
-  --font-sans: Figtree, "Helvetica Neue", Arial, sans-serif;
+  --font-serif: Inter, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: Inter, "Helvetica Neue", Arial, sans-serif;
 }
 
 html {
@@ -57,42 +57,27 @@ body {
   color: var(--ink);
 }
 
-/* The chunky honey button: ink border, hard offset shadow that presses in. */
-.btn-honey {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  border-radius: 10px;
-  background: var(--honey);
-  color: var(--ink);
-  border: 1.5px solid var(--ink);
-  box-shadow: 3px 3px 0 var(--ink);
-  font-weight: 700;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-.btn-honey:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 5px 5px 0 var(--ink);
-}
-.btn-honey:active {
-  transform: translate(3px, 3px);
-  box-shadow: 0 0 0 var(--ink);
+/* Headings: Inter semibold with tight tracking, like Notion's (the class name is from the serif days). */
+.font-serif {
+  font-weight: 600;
 }
 
+/* Buttons, as Notion draws them: 8px corners, no borders on the solid ones, a quiet hover. */
+.btn-honey,
 .btn-ink {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--ink);
   color: #fff;
-  font-weight: 700;
+  font-weight: 500;
   transition: background 0.15s ease;
 }
+.btn-honey:hover,
 .btn-ink:hover {
-  background: #3a342c;
+  background: #37352f;
 }
 
 .btn-outline {
@@ -100,11 +85,11 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border-radius: 10px;
-  background: var(--paper);
+  border-radius: 8px;
+  background: #fff;
   color: var(--ink);
-  border: 1.5px solid var(--ink);
-  font-weight: 700;
+  border: 1px solid var(--line);
+  font-weight: 500;
   transition: background 0.15s ease;
 }
 .btn-outline:hover {

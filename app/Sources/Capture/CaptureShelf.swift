@@ -10,12 +10,13 @@ final class CaptureShelf {
     static let shared = CaptureShelf()
     private var panel: NSPanel?
 
-    private static let width: CGFloat = 236
+    private static let width: CGFloat = 332
 
     /// Just as tall as its cards, so the shelf never sits over clicks meant for what is behind it.
     private var height: CGFloat {
-        let n = CGFloat(CaptureService.shared.shelf.count)
-        return n * 140 + (n > 1 ? 34 : 0) + (CaptureService.shared.recordingSince != nil ? 44 : 0) + 8
+        let shelf = CaptureService.shared.shelf
+        let cards = shelf.reduce(CGFloat(0)) { $0 + ($1.fromRecorder ? RecordingCard.height : 132) + 8 }
+        return cards + (shelf.count > 1 ? 34 : 0) + (CaptureService.shared.recordingSince != nil ? 44 : 0) + 8
     }
 
     func show() {
@@ -85,7 +86,9 @@ private struct CaptureShelfView: View {
         VStack(alignment: .trailing, spacing: 8) {
             Spacer(minLength: 0)
             ForEach(captures.shelf.reversed()) { c in
-                CaptureCard(capture: c)
+                Group {
+                    if c.fromRecorder { RecordingCard(capture: c) } else { CaptureCard(capture: c) }
+                }
                     .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .opacity))
             }
             if let since = captures.recordingSince {
@@ -313,5 +316,149 @@ private final class DragSourceView: NSView, NSDraggingSource {
         dragging = false
         downAt = nil
         if !operation.isEmpty { onDropped() }
+    }
+}
+
+extension Capture {
+    /// Made by the recorder (has, or is getting, a polished version), so it gets the bigger card.
+    var fromRecorder: Bool { kind == .recording && (polished != nil || status != nil || progress != nil || title != nil) }
+}
+
+/// A recording from the recorder, from the Purist frame "Capture · 3 Shelf": a preview (polished unless you pick
+/// raw), its title, and Raw / Polished, Edit and Paste. While it's being finished it shows how far along it is.
+/// Swipe it right to put it away, as with the other cards.
+struct RecordingCard: View {
+    static let height: CGFloat = 264
+    let capture: Capture
+    @EnvironmentObject var captures: CaptureService
+    @State private var polished = true
+    @State private var swipe: CGFloat = 0
+    @State private var pasted = false
+
+    var body: some View {
+        VStack(spacing: 0) {
+            preview
+            footer
+        }
+        .frame(width: 316)
+        .background(RoundedRectangle(cornerRadius: 12).fill(.white))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.black.opacity(0.1)))
+        .shadow(color: .black.opacity(0.10), radius: 14, y: 6)
+        .offset(x: swipe)
+        .opacity(1 - min(swipe / 260, 0.7))
+    }
+
+    private var preview: some View {
+        ZStack(alignment: .bottomTrailing) {
+            Color(hex: 0xF6F5F4)
+            if capture.isFinishing || capture.status != nil && capture.polished == nil && !FileManager.default.fileExists(atPath: capture.url.path) {
+                VStack(spacing: 10) {
+                    Text(capture.status ?? "Finishing").font(DF.font(13, .medium)).foregroundStyle(DF.muted)
+                        .multilineTextAlignment(.center).lineLimit(2).padding(.horizontal, 16)
+                    if let p = capture.progress { DFProgressBar(value: p).frame(width: 160) }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                CapturePoster(capture: capture, polished: polished && capture.polished != nil)
+            }
+            if let d = CaptureLibrary.duration(capture) {
+                Text(CaptureLibrary.time(d)).font(DF.font(11, .medium)).foregroundStyle(DF.ink.opacity(0.7))
+                    .padding(.horizontal, 7).frame(height: 20)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(.white.opacity(0.92)))
+                    .padding(9)
+            }
+        }
+        .frame(height: 168)
+        .clipped()
+        .overlay(alignment: .bottom) { Rectangle().fill(Color.black.opacity(0.06)).frame(height: 1) }
+        // click to open it in Oatmeal; drag it anywhere; swipe right to put it away
+        .overlay(DragArea(files: captures.files(capture, polished: polished), picture: capture.frames, onClick: edit,
+                          onDropped: { withAnimation(.easeOut(duration: 0.2)) { captures.remove(capture) } },
+                          onSwipe: { swipe = max(0, $0) }, onSwipeEnd: endSwipe))
+        .overlay(alignment: .topTrailing) {
+            Button { withAnimation { captures.remove(capture) } } label: {
+                Image(systemName: "xmark").font(.system(size: 9, weight: .bold)).foregroundStyle(DF.ink)
+                    .frame(width: 20, height: 20).background(Circle().fill(.white.opacity(0.95)))
+            }
+            .buttonStyle(.plain).padding(8).help("Remove from the shelf")
+        }
+    }
+
+    private var footer: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(CaptureLibrary.title(capture)).font(DF.font(14, .semibold)).foregroundStyle(DF.ink).lineLimit(1)
+                Text(subtitle).font(DF.font(12)).foregroundStyle(DF.muted).lineLimit(1)
+            }
+            HStack(spacing: 6) {
+                if capture.polished != nil {
+                    HStack(spacing: 0) {
+                        seg("Raw", on: !polished) { polished = false }
+                        seg("Polished", on: polished) { polished = true }
+                    }
+                    .padding(2).background(RoundedRectangle(cornerRadius: 7).fill(DF.wash))
+                }
+                Spacer(minLength: 4)
+                Button(action: edit) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "scissors").font(.system(size: 10.5, weight: .semibold))
+                        Text("Edit").font(DF.font(12, .medium))
+                    }
+                    .foregroundStyle(DF.ink).padding(.horizontal, 9).frame(height: 26)
+                    .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(Color.black.opacity(0.1)))
+                }
+                .buttonStyle(.plain).disabled(capture.isFinishing)
+                Button(action: paste) {
+                    HStack(spacing: 5) {
+                        Image(systemName: pasted ? "checkmark" : "doc.on.clipboard").font(.system(size: 10.5, weight: .semibold))
+                        Text(pasted ? "Pasted" : "Paste").font(DF.font(12, .medium))
+                    }
+                    .foregroundStyle(.white).padding(.horizontal, 10).frame(height: 26)
+                    .background(RoundedRectangle(cornerRadius: 7).fill(DF.ink))
+                }
+                .buttonStyle(.plain).disabled(capture.isFinishing)
+                .help("Paste into \(captures.targetApp?.localizedName ?? "the app you were in"): the video, its frames and what was said")
+            }
+        }
+        .padding(12)
+        .frame(height: Self.height - 168, alignment: .top)
+    }
+
+    private var subtitle: String {
+        if let s = capture.status { return s }
+        var parts = [capture.polished == nil ? "Raw" : (polished ? "Polished" : "Raw")]
+        if capture.transcript != nil { parts.append("transcript ready") }
+        return parts.joined(separator: " · ")
+    }
+
+    private func seg(_ title: String, on: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title).font(DF.font(12, .medium)).foregroundStyle(on ? DF.ink : DF.muted)
+                .padding(.horizontal, 8).frame(height: 22)
+                .background(RoundedRectangle(cornerRadius: 5).fill(on ? Color.white : .clear).shadow(color: .black.opacity(on ? 0.1 : 0), radius: 1, y: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func edit() {
+        guard !capture.isFinishing else { return }
+        AppModel.shared.selectedCaptureID = capture.id
+        AppModel.shared.open(.captures)
+    }
+
+    private func paste() {
+        captures.paste(capture, polished: polished)
+        withAnimation { pasted = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) { withAnimation { pasted = false } }
+    }
+
+    private func endSwipe(_ velocity: CGFloat) {
+        if swipe > 70 || velocity > 600 {
+            withAnimation(.easeOut(duration: 0.18)) { swipe = 360 }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { captures.remove(capture) }
+        } else {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { swipe = 0 }
+        }
     }
 }

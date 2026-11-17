@@ -44,18 +44,18 @@ enum Place: Hashable {
 }
 
 enum Section: String, CaseIterable, Identifiable {
-    case meetings, dictation, settings
+    case meetings, dictation, captures, settings
     var id: String { rawValue }
     /// The sections in the sidebar's main switch (Settings sits at the bottom).
-    static var main: [Section] { [.meetings, .dictation] }
+    static var main: [Section] { [.meetings, .dictation, .captures] }
     var title: String {
-        switch self { case .meetings: "Notes"; case .dictation: "Flow"; case .settings: "Settings" }
+        switch self { case .meetings: "Notes"; case .dictation: "Flow"; case .captures: "Captures"; case .settings: "Settings" }
     }
     var symbol: String {
-        switch self { case .meetings: "note.text"; case .dictation: "waveform"; case .settings: "gearshape" }
+        switch self { case .meetings: "note.text"; case .dictation: "waveform"; case .captures: "viewfinder"; case .settings: "gearshape" }
     }
     var key: KeyEquivalent {
-        switch self { case .meetings: "1"; case .dictation: "2"; case .settings: "," }
+        switch self { case .meetings: "1"; case .dictation: "2"; case .captures: "3"; case .settings: "," }
     }
 }
 
@@ -67,6 +67,8 @@ final class AppModel: ObservableObject {
     @Published var section: Section = .meetings
     /// The open meeting; nil shows the list for `place`.
     @Published var selectedMeetingID: UUID?
+    /// The open capture (its file name); nil shows the grid.
+    @Published var selectedCaptureID: String?
     /// Where the meetings list is, like a Finder window: Recent, or a folder (nil = the top level).
     @Published var place: Place = .folder(nil)
     /// Folders open in the sidebar tree.

@@ -16,6 +16,9 @@ packages:
   WhisperKit:
     url: https://github.com/argmaxinc/WhisperKit.git
     from: "0.9.0"
+  # Lurker's recorder and engine, copied in (Packages/Lurker): polished recordings with zooms, a frame and your camera.
+  Lurker:
+    path: Packages/Lurker
 
 targets:
   Oatmeal:
@@ -64,6 +67,12 @@ targets:
       - package: FluidAudio
       - package: KeyboardShortcuts
       - package: WhisperKit
+      - package: Lurker
+        product: LurkerCore
+      - package: Lurker
+        product: LurkerCapture
+      - package: Lurker
+        product: LurkerEngine
     scheme:
       testTargets:
         - OatmealTests
@@ -87,6 +96,7 @@ targets:
         NSCalendarsUsageDescription: "Oatmeal names your meeting notes after the event in your calendar."
         NSCalendarsFullAccessUsageDescription: "Oatmeal names your meeting notes after the event in your calendar."
         NSAudioCaptureUsageDescription: "Oatmeal records meeting audio on your Mac so it can write notes. No bot joins the call."
+        NSCameraUsageDescription: "Oatmeal puts your face in a bubble on screen recordings, when you turn the camera on."
 
   OatmealTests:
     type: bundle.unit-test

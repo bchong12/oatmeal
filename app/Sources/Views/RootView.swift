@@ -14,6 +14,7 @@ struct RootView: View {
                     switch model.section {
                     case .meetings: MeetingsView()
                     case .dictation: DictationView()
+                    case .captures: CapturesView()
                     case .settings: SettingsView()
                     }
                 }
@@ -47,24 +48,25 @@ private struct Sidebar: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                BrandMark(size: 24)
-                if !compact { Text("oatmeal").font(DF.serif(24)).tracking(-0.4) }
+                BrandMark(size: 22)
+                if !compact { Text("Oatmeal").font(DF.font(16, .semibold)).tracking(-0.2) }
             }
             .frame(maxWidth: .infinity, alignment: compact ? .center : .leading)
-            .padding(.horizontal, compact ? 0 : 6)
-            .padding(.top, 48).padding(.bottom, 16)
+            .padding(.horizontal, compact ? 0 : 8)
+            .padding(.top, 46).padding(.bottom, 14)
 
             RecordButton(compact: compact, recording: meeting.isRecording, elapsed: meeting.elapsed)
-                .padding(.bottom, 18)
+                .padding(.bottom, 14)
 
             VStack(spacing: 1) {
-                SidebarRow(icon: "clock", title: "Recent", compact: compact,
-                           selected: model.section == .meetings && model.place == .recent) { model.go(.recent) }
-                SidebarRow(icon: "tray", title: "Meetings", count: notes.count, compact: compact,
-                           selected: model.section == .meetings && model.place == .folder(nil),
+                SidebarRow(icon: "doc.text", title: "Meetings", count: notes.count, compact: compact,
+                           selected: model.section == .meetings && (model.place == .folder(nil) || model.place == .recent),
                            drop: { MeetingFolders.drop($0, into: nil, ctx: model.context) }) { model.go(.folder(nil)) }
                 SidebarRow(icon: "waveform", title: "Flow", compact: compact, selected: model.section == .dictation) {
                     withAnimation(.snappy(duration: 0.22)) { model.section = .dictation }
+                }
+                SidebarRow(icon: "viewfinder", title: "Captures", compact: compact, selected: model.section == .captures) {
+                    withAnimation(.snappy(duration: 0.22)) { model.section = .captures; model.selectedCaptureID = nil }
                 }
             }
 
@@ -82,9 +84,9 @@ private struct Sidebar: View {
             }
             .padding(.bottom, 12)
         }
-        .padding(.horizontal, compact ? 10 : 12)
-        .frame(width: compact ? 64 : 240)
-        .background(Color(hex: 0xF5F0E3))
+        .padding(.horizontal, compact ? 10 : 10)
+        .frame(width: compact ? 64 : 232)
+        .background(DF.canvas)
     }
 }
 
@@ -103,15 +105,15 @@ private struct SidebarRow: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 9) {
-                Image(systemName: icon).font(.system(size: 13, weight: .medium))
+                Image(systemName: icon).font(.system(size: 13, weight: .regular))
                     .foregroundStyle(selected ? DF.ink : DF.muted).frame(width: 18)
                 if !compact {
-                    Text(title).font(DF.font(14, selected ? .semibold : .medium)).foregroundStyle(selected ? DF.ink : Color(hex: 0x4A443B))
+                    Text(title).font(DF.font(15, .medium)).foregroundStyle(selected ? DF.ink : Color(hex: 0x5F5E5B))
                     Spacer(minLength: 4)
                     if let count, count > 0 { Text("\(count)").font(DF.font(12, .medium)).foregroundStyle(DF.faint).monospacedDigit() }
                 }
             }
-            .padding(.horizontal, compact ? 0 : 8).frame(maxWidth: compact ? 44 : .infinity).frame(height: 30)
+            .padding(.horizontal, compact ? 0 : 8).frame(maxWidth: compact ? 44 : .infinity).frame(height: 28)
             .background(SidebarHighlight(selected: selected, hover: hover, targeted: targeted))
             .contentShape(Rectangle())
         }
@@ -122,16 +124,15 @@ private struct SidebarRow: View {
     }
 }
 
-/// Selected rows sit on paper with a hairline; hover is a soft wash; a drop target glows honey.
+/// Notion's sidebar: the open page on a soft grey, hover a touch lighter; a drop target glows honey.
 private struct SidebarHighlight: View {
     let selected: Bool
     let hover: Bool
     var targeted = false
     var body: some View {
-        RoundedRectangle(cornerRadius: 8)
-            .fill(targeted ? DF.honey.opacity(0.45) : selected ? DF.paper : hover ? Color(hex: 0xEBE4D2) : .clear)
-            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(targeted ? DF.honeyDeep : selected ? DF.line : .clear, lineWidth: targeted ? 1.5 : 1))
-            .shadow(color: selected ? Color(hex: 0x3B2A20).opacity(0.06) : .clear, radius: 2, y: 1)
+        RoundedRectangle(cornerRadius: 6)
+            .fill(targeted ? DF.honey.opacity(0.45) : selected ? Color.black.opacity(0.05) : hover ? Color.black.opacity(0.03) : .clear)
+            .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(targeted ? DF.honeyDeep : .clear, lineWidth: 1.5))
     }
 }
 
@@ -159,7 +160,7 @@ private struct FolderTree: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
             HStack {
-                Text("Folders").font(DF.font(12, .semibold)).foregroundStyle(DF.faint)
+                Text("Folders").font(DF.font(13, .medium)).foregroundStyle(DF.faint)
                 Spacer()
                 Button {
                     let f = MeetingFolders.create(in: nil, ctx: model.context)
@@ -234,14 +235,14 @@ private struct FolderTreeRow: View {
             if model.renaming?.id == folder.id && model.renaming?.inSidebar == true {
                 FolderNameField(folder: folder)
             } else {
-                Text(folder.name).font(DF.font(14, selected ? .semibold : .medium))
-                    .foregroundStyle(selected ? DF.ink : Color(hex: 0x4A443B)).lineLimit(1)
+                Text(folder.name).font(DF.font(15, .medium))
+                    .foregroundStyle(selected ? DF.ink : Color(hex: 0x5F5E5B)).lineLimit(1)
                 Spacer(minLength: 4)
                 if count > 0 { Text("\(count)").font(DF.font(12, .medium)).foregroundStyle(DF.faint).monospacedDigit() }
             }
         }
-        .padding(.leading, 2 + CGFloat(depth) * 14).padding(.trailing, 8)
-        .frame(height: 30)
+        .padding(.leading, 2 + CGFloat(depth) * 16).padding(.trailing, 8)
+        .frame(height: 28)
         .background(SidebarHighlight(selected: selected, hover: hover, targeted: targeted))
         .contentShape(Rectangle())
         .onTapGesture { model.go(.folder(folder.id)) }
@@ -293,14 +294,15 @@ struct FolderNameField: View {
     }
 }
 
-/// The honey button that starts (or stops) meeting notes.
+/// The white button that starts (or stops) meeting notes: a red dot, the words, ⌘N.
 private struct RecordButton: View {
     let compact: Bool
     let recording: Bool
     let elapsed: TimeInterval
+    @State private var hover = false
     var body: some View {
         Button { PillController.shared.toggleMeeting() } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: 9) {
                 ZStack {
                     if recording {
                         RoundedRectangle(cornerRadius: 2).fill(DF.now).frame(width: 8, height: 8)
@@ -308,14 +310,23 @@ private struct RecordButton: View {
                         Circle().fill(DF.now).frame(width: 8, height: 8)
                     }
                 }
+                .frame(width: 18)
                 if !compact {
                     Text(recording ? "Stop \u{00B7} \(Duration.seconds(elapsed).formatted(.time(pattern: .minuteSecond)))" : "Record a meeting")
-                        .font(DF.font(14, .semibold)).monospacedDigit()
+                        .font(DF.font(15, .medium)).foregroundStyle(DF.ink).monospacedDigit()
+                    Spacer(minLength: 4)
+                    if !recording { Text("\u{2318}N").font(DF.font(13)).foregroundStyle(DF.faint) }
                 }
             }
-            .frame(maxWidth: compact ? 24 : .infinity)
+            .padding(.horizontal, compact ? 0 : 8)
+            .frame(maxWidth: compact ? 44 : .infinity).frame(height: 32)
+            .background(hover ? Color(hex: 0xFBFBFA) : DF.paper, in: RoundedRectangle(cornerRadius: 7))
+            .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(Color.black.opacity(0.1)))
+            .shadow(color: .black.opacity(0.04), radius: 1, y: 1)
+            .contentShape(Rectangle())
         }
-        .buttonStyle(.df(.honey, height: 36))
+        .buttonStyle(.plain)
+        .onHover { hover = $0 }
         .help("Right \u{2325} M from anywhere")
     }
 }
@@ -377,8 +388,7 @@ struct TopBar: View {
                     .help(model.sidePanelOpen ? "Hide today\u{2019}s meetings" : "Show today\u{2019}s meetings")
             }
         }
-        .padding(.leading, model.sidebarCollapsed ? 24 : 14).padding(.trailing, 14).frame(height: 52)
-        .overlay(alignment: .bottom) { Rectangle().fill(DF.line).frame(height: 1) }
+        .padding(.leading, model.sidebarCollapsed ? 24 : 12).padding(.trailing, 12).frame(height: 44)
         .background(DF.paper)
         .animation(.easeOut(duration: 0.15), value: crumbs)
     }
@@ -427,7 +437,7 @@ struct PageHeader<Actions: View>: View {
             Spacer(minLength: 8)
             actions.fixedSize()
         }
-        .padding(.horizontal, 28).padding(.top, 22).padding(.bottom, 14)
+        .padding(.horizontal, DF.inset).padding(.top, DF.pageTop).padding(.bottom, 16)
     }
 }
 

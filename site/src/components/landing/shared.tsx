@@ -177,11 +177,11 @@ export function Svg({
   )
 }
 
-/** The chunky honey "Get … for Mac" button. */
+/** The ink "Get … for Mac" button, sized like Notion's main buttons. */
 export function MacCta({ label }: { label: string }) {
   return (
-    <Link to="/download" className="btn-honey px-[26px] py-[17px] text-[17px]">
-      <AppleLogo size={17} />
+    <Link to="/download" className="btn-ink min-h-[42px] px-[18px] text-[16px]">
+      <AppleLogo size={15} />
       {label}
     </Link>
   )

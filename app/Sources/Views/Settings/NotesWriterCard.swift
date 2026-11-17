@@ -11,7 +11,7 @@ struct NotesWriterCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("WHO WRITES YOUR NOTES").font(DF.font(12, .bold)).tracking(1).foregroundStyle(DF.faint).padding(.top, 4)
+            Text("Who writes your notes").font(DF.font(17, .semibold)).foregroundStyle(DF.ink).padding(.top, 4)
             VStack(spacing: 0) {
                 ForEach(Array(kinds.enumerated()), id: \.element) { i, k in
                     if i > 0 { Divider().overlay(DF.line) }
@@ -52,14 +52,16 @@ struct NotesWriterCard: View {
                 DFRadio(on: on).opacity(installed ? 1 : 0.4)
             }
         }
-        .padding(.horizontal, 18).padding(.vertical, 14)
-        .background(on ? DF.honey.opacity(0.18) : .clear)
+        .padding(.vertical, 14)
+        
         .contentShape(Rectangle())
         .onTapGesture { if installed { writers.preferred = k } }
     }
 
     @ViewBuilder private func logo(_ k: NoteWriterKind) -> some View {
-        if let url = Bundle.main.url(forResource: k.logo, withExtension: "png", subdirectory: "Brand"), let img = NSImage(contentsOf: url) {
+        if k == .oatmeal {
+            GeometryReader { g in BrandMark(size: g.size.width) }
+        } else if let url = Bundle.main.url(forResource: k.logo, withExtension: "png", subdirectory: "Brand"), let img = NSImage(contentsOf: url) {
             Image(nsImage: img).resizable().interpolation(.high)
         } else {
             RoundedRectangle(cornerRadius: 9).fill(DF.wash)

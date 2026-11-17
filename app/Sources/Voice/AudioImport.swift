@@ -107,7 +107,7 @@ final class AudioImporter: ObservableObject {
     nonisolated private static let slack = 4.0       // look this far back for a quiet place to cut
 
     /// Streams the file as 16 kHz mono Float32 (AVAssetReader does the resampling), transcribing as it goes.
-    nonisolated private static func transcribe(_ asset: AVURLAsset, duration: Double,
+    nonisolated static func transcribe(_ asset: AVURLAsset, duration: Double,
                                                progress: @escaping @Sendable (Double) -> Void) async throws -> [TranscriptSegment] {
         guard let track = try await asset.loadTracks(withMediaType: .audio).first else { throw ImportError.noAudio }
         let reader = try AVAssetReader(asset: asset)

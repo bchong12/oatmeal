@@ -67,7 +67,7 @@ struct SpeechModelsCard: View {
             Spacer(minLength: 12)
             trailing(m, locked: locked)
         }
-        .padding(20)
+        .padding(.vertical, 16)
         .contentShape(Rectangle())
         .onTapGesture {
             guard !locked, !selected else { return }

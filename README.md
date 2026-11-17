@@ -6,6 +6,10 @@ written by the AI you already pay for.
 - **Oatmeal Notes** records your mic and the other side of the call (Zoom, Meet, Teams, FaceTime),
   with no bot joining. When the meeting ends, Claude Code, Codex or Gemini CLI writes Granola-style
   notes from the transcript, on your own plan.
+- **Oatmeal Capture** records your screen with your face and voice (fn ⌘): pick an area, a window or
+  the whole screen, your camera and mic. When you stop you get the raw video and a polished one, with
+  zooms on your clicks and typing, a clean frame and your camera in the corner, plus a transcript. fn Space
+  takes a screenshot. Both wait on a shelf to paste into your agent, and live in the Captures section.
 - **Oatmeal Flow** works in any app: hold right ⌥, talk, let go, and the words are typed where your
   cursor is. It drops the ums, follows "scratch that", and handles spoken punctuation.
 
@@ -67,9 +71,12 @@ permissions, sign with your own certificate: copy `app/Config/Signing.local.exam
 ```
 site/           the website and Whop blueprint (TanStack Start on Whop hosting)
 app/
+  Packages/Lurker  Lurker's recorder and editing engine, copied in: it records captures and renders the
+                   polished version (Oatmeal adds mic recording and the camera bubble)
   Sources/
     Account/    connecting to a site, signing in, the plan, Oatmeal AI
     App/        app entry, app state, logging
+    Capture/    screenshots, the recorder (start bar, camera bubble, controls) and the shelf
     Design/     colours, type, and Oatmeal's own controls (buttons, menus, dialogs, switches)
     MCP/        the local MCP server, its tools, and the Claude Code / Codex / Gemini note writers
     Pill/       the floating pill and the right ⌥ key

@@ -9,7 +9,15 @@ struct Capture: Identifiable, Equatable {
     let date: Date
     /// For a recording: its frames on one picture, so an agent can see it.
     var frames: URL?
+    /// A recording made with the recorder: its polished version, what was said, and a title.
+    var polished: URL?
+    var transcript: URL?
+    var title: String?
+    /// While a recording is being finished: what's happening, and how far (0–1).
+    var status: String?
+    var progress: Double?
     var id: String { url.lastPathComponent }
+    var isFinishing: Bool { progress != nil }
     /// What an agent can look at: the picture, or a recording's frames.
     var picture: URL? { kind == .shot ? url : frames }
 }
@@ -57,6 +65,18 @@ final class CaptureService: ObservableObject {
             if !shelf.isEmpty { CaptureShelf.shared.show() }
         case "shot":
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.capture(["-x"], ext: "png") }
+        case "bar":
+            // `-captures bar` opens the recorder's start bar, for checking it on screen.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { RecorderController.shared.open() }
+        case "record":
+            // `-captures record` records the screen under the mouse for 5 s with the saved camera and mic, then finishes it.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                let rec = RecorderController.shared
+                rec.mode = .screen
+                rec.open()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { rec.record() }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 7.5) { rec.stop() }
+            }
         default: break
         }
     }
@@ -80,14 +100,9 @@ final class CaptureService: ObservableObject {
     /// screen), or stop the one running. Stopping is ⌃C to screencapture,
     /// which closes the video properly.
     func toggleRecording() {
-        if recordingSince != nil, let p = running { DFLog.log("capture", "stopping the recording"); p.interrupt(); return }
         guard running == nil else { return }
-        rememberTarget()
-        RegionPicker.shared.pick { [weak self] rect in
-            guard let self, let r = rect else { return }
-            self.targetApp?.activate()
-            self.capture(["-v", "-k", "-x", "-R", "\(Int(r.minX)),\(Int(r.minY)),\(Int(r.width)),\(Int(r.height))"], ext: "mov", recording: true)
-        }
+        if !RecorderController.shared.isRecording { rememberTarget() }
+        RecorderController.shared.toggle()
     }
 
     /// The app in front, where a click on the shelf will paste (never Oatmeal itself).
@@ -218,20 +233,25 @@ final class CaptureService: ObservableObject {
     /// Paste into the app you were in: its path as text (what a terminal agent
     /// reads) and the file itself (what an app that takes files reads). A
     /// recording goes over as its frames first, then the video.
-    func paste(_ c: Capture) {
-        put(c)
+    func paste(_ c: Capture, polished: Bool = true) {
+        put(c, polished: polished)
         if let app = targetApp, !app.isActive { app.activate() }
         guard TextInserter.isTrusted(prompt: true) else { return }   // left on the clipboard
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { Self.postPaste() }
     }
 
     /// On the clipboard only, for pasting by hand.
-    func copy(_ c: Capture) { put(c) }
+    func copy(_ c: Capture, polished: Bool = true) { put(c, polished: polished) }
 
     func reveal(_ c: Capture) { NSWorkspace.shared.activateFileViewerSelecting([c.url]) }
 
-    /// The files a capture hands over: a recording's frames first, then the video.
-    func files(_ c: Capture) -> [URL] { c.kind == .recording ? [c.frames, c.url].compactMap { $0 } : [c.url] }
+    /// The files a capture hands over: a recording's frames first, then the video (polished unless you
+    /// picked raw), then what was said.
+    func files(_ c: Capture, polished: Bool = true) -> [URL] {
+        guard c.kind == .recording else { return [c.url] }
+        let video = polished ? (c.polished ?? c.url) : c.url
+        return [c.frames, video, c.transcript].compactMap { $0 }
+    }
 
     func remove(_ c: Capture) {
         shelf.removeAll { $0.id == c.id }
@@ -240,8 +260,22 @@ final class CaptureService: ObservableObject {
 
     func clearShelf() { shelf.removeAll(); CaptureShelf.shared.hide() }
 
-    private func put(_ c: Capture) {
-        let files = files(c)
+    /// A recording that's still being finished joins the shelf right away, with its progress.
+    func startFinishing(_ c: Capture) {
+        shelf.removeAll { $0.id == c.id }
+        shelf.insert(c, at: 0)
+        if shelf.count > 3 { shelf.removeLast(shelf.count - 3) }
+        CaptureShelf.shared.show()
+    }
+
+    func updateFinishing(id: String, _ change: (inout Capture) -> Void) {
+        guard let i = shelf.firstIndex(where: { $0.id == id }) else { return }
+        change(&shelf[i])
+        CaptureShelf.shared.fit()
+    }
+
+    private func put(_ c: Capture, polished: Bool = true) {
+        let files = files(c, polished: polished)
         let pb = NSPasteboard.general
         pb.clearContents()
         let text = files.map(\.path).joined(separator: " ")
@@ -275,12 +309,20 @@ final class CaptureService: ObservableObject {
         let byName = Set(files.map(\.lastPathComponent))
         return files.compactMap { url -> Capture? in
             let ext = url.pathExtension.lowercased(), name = url.lastPathComponent
-            if name.hasSuffix(".frames.png") { return nil }
+            if name.hasSuffix(".frames.png") || name.contains(".polished.") { return nil }
             let date = (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
             if ext == "png" || ext == "jpg" { return Capture(url: url, kind: .shot, date: date) }
             guard ext == "mov" || ext == "mp4" else { return nil }
-            let framesName = url.deletingPathExtension().lastPathComponent + ".frames.png"
-            return Capture(url: url, kind: .recording, date: date, frames: byName.contains(framesName) ? url.deletingLastPathComponent().appendingPathComponent(framesName) : nil)
+            // a recording still being finished shows on the shelf, not in the list
+            if !FileManager.default.fileExists(atPath: url.path) { return nil }
+            let base = url.deletingPathExtension().lastPathComponent, dir = url.deletingLastPathComponent()
+            let framesName = base + ".frames.png"
+            var c = Capture(url: url, kind: .recording, date: date, frames: byName.contains(framesName) ? dir.appendingPathComponent(framesName) : nil)
+            if byName.contains(base + ".polished.mp4") { c.polished = dir.appendingPathComponent(base + ".polished.mp4") }
+            if byName.contains(base + ".txt") { c.transcript = dir.appendingPathComponent(base + ".txt") }
+            if let data = try? Data(contentsOf: dir.appendingPathComponent(base + ".json")),
+               let meta = try? JSONDecoder().decode(CapturePolish.Meta.self, from: data) { c.title = meta.title }
+            return c
         }.sorted { $0.date > $1.date }
     }
 }

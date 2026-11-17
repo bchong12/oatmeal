@@ -8,7 +8,7 @@ struct AccountCard: View {
     var body: some View {
         if let site = account.site {
             VStack(alignment: .leading, spacing: 10) {
-                Text("ACCOUNT").font(DF.font(12, .bold)).tracking(1).foregroundStyle(DF.faint).padding(.top, 4)
+                Text("Account").font(DF.font(17, .semibold)).foregroundStyle(DF.ink).padding(.top, 4)
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(spacing: 14) {
                         BrandMark(size: 36)
@@ -33,16 +33,16 @@ struct AccountCard: View {
                         if account.busy { DFSpinner(size: 13, color: DF.muted) }
                         actions
                     }
-                    .padding(.horizontal, 18).padding(.vertical, 14)
+                    .padding(.vertical, 14)
                     if let error = account.error {
-                        Rectangle().fill(DF.line).frame(height: 1).padding(.horizontal, 18)
+                        Rectangle().fill(DF.line).frame(height: 1)
                         HStack(spacing: 8) {
                             Image(systemName: "exclamationmark.circle").foregroundStyle(DF.tiredInk)
                             Text(error).font(DF.font(13)).foregroundStyle(DF.muted).fixedSize(horizontal: false, vertical: true)
                             Spacer()
                             Button("Retry") { Task { await account.refresh() } }.buttonStyle(.df(.ghost, height: 26))
                         }
-                        .padding(.horizontal, 18).padding(.vertical, 10)
+                        .padding(.vertical, 10)
                     }
                 }
                 .dfCard()

@@ -1,32 +1,28 @@
-// Closing: "You've got a lot to say. Oatmeal writes it down." over a blurred photo. Purist node Pu81qy.
+// Closing, as Notion ends its page: a soft grey band, one line and the buttons, with the cast peeking over
+// its top edge.
 
+import { Link } from '@tanstack/react-router'
 import { useBrand } from '#/lib/brand'
+import { Face } from '#/components/site/Mark'
 import { MacCta } from './shared'
 
 export function Closing() {
   const brand = useBrand()
   return (
-    <section className="oat-enter mx-auto flex max-w-[1440px] px-3 pt-3 sm:px-[24px] sm:pt-[24px]">
-      <div className="relative flex min-h-[560px] w-full flex-col items-center justify-center gap-[28px] overflow-hidden rounded-[24px] px-5 py-20 text-center sm:rounded-[32px] min-[1200px]:h-[720px]">
-        <div
-          className="absolute -inset-[40px]"
-          style={{
-            backgroundImage: 'url(/landing/closing.jpg)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center 40%',
-            filter: 'blur(7px) saturate(1.15)',
-          }}
-        />
-        <div className="absolute inset-0 bg-[rgba(28,20,14,0.38)]" />
-        <h2 className="relative flex flex-col items-center font-serif font-normal tracking-[-0.035em] text-cream text-[clamp(42px,7.2vw,96px)] leading-[1.02]">
-          <span>You've got a lot to say.</span>
-          <span className="text-honey">{brand.name} writes it down.</span>
-        </h2>
-        <p className="relative max-w-[520px] text-[18px] leading-[26px] font-medium text-cream/90 sm:text-[20px] sm:leading-[28px]">
-          Flow for everything you'd type. Notes for every meeting. Both in one free app.
-        </p>
-        <div className="relative">
-          <MacCta label={`Get ${brand.name} for Mac`} />
+    <section className="oat-enter mx-auto max-w-[1240px] px-5 pt-[60px]">
+      <div className="relative flex flex-col items-center gap-[14px] rounded-[16px] bg-[#F6F5F4] px-[32px] py-[64px] text-center">
+        <div className="absolute -top-[58px] left-1/2 flex -translate-x-1/2 items-end">
+          <Face who="h" className="h-[78px] w-[78px] -rotate-[6deg]" />
+          <Face className="-mx-[10px] h-[92px] w-[92px]" />
+          <Face who="k" className="h-[78px] w-[78px] rotate-[6deg]" />
+        </div>
+        <h2 className="font-serif text-[clamp(32px,4.4vw,48px)] leading-[1.1] tracking-[-0.035em]">You talk. {brand.name} writes it down.</h2>
+        <p className="max-w-[520px] text-[18px] leading-[27px] text-black/70">Flow for everything you'd type, Notes for every meeting, Capture for everything you'd rather show.</p>
+        <div className="flex flex-wrap items-center justify-center gap-[12px] pt-[6px]">
+          <MacCta label={`Get ${brand.name} free`} />
+          <Link to="/pricing" className="inline-flex min-h-[42px] items-center rounded-[8px] bg-white px-[18px] text-[16px] font-medium ring-1 ring-black/10 transition-colors hover:bg-[#F1F1EF]">
+            See pricing
+          </Link>
         </div>
       </div>
     </section>

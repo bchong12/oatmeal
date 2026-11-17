@@ -46,7 +46,7 @@ function handBackToApp(token: string, site: string, brand: string, cookies: stri
 <style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#FCF8EA;color:#1C1915;font:16px/1.5 Figtree,system-ui,sans-serif}
 main{text-align:center;padding:24px}h1{font:400 34px/1.1 "Young Serif",Georgia,serif;margin:0 0 10px}p{color:#6E665A;margin:0 0 22px}
 a{display:inline-block;background:#F6D27C;color:#1C1915;border:1.5px solid #1C1915;border-radius:10px;padding:12px 20px;font-weight:600;text-decoration:none;box-shadow:3px 3px 0 #1C1915}</style>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600&family=Young+Serif&display=swap"></head>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"></head>
 <body><main><h1>You're signed in.</h1><p>Head back to ${esc(brand)} on your Mac.</p><a href="${esc(link)}">Open ${esc(brand)}</a></main>
 <script>location.href=${JSON.stringify(link)}</script></body></html>`
   const headers = new Headers({ 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' })

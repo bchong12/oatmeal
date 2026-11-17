@@ -15,35 +15,51 @@ struct SettingsView: View {
     enum SettingsTab: String, CaseIterable, Identifiable {
         case general = "General", dictation = "Dictation", audio = "Audio", models = "Models", calendars = "Calendars", shortcuts = "Shortcuts", mcp = "MCP"
         var id: String { rawValue }
+        var title: String { self == .mcp ? "Connect your AI" : rawValue }
+        var symbol: String {
+            switch self {
+            case .general: "gearshape"; case .dictation: "waveform"; case .audio: "speaker.wave.2"; case .models: "cpu"
+            case .calendars: "calendar"; case .shortcuts: "command"; case .mcp: "point.3.connected.trianglepath.dotted"
+            }
+        }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Settings").font(DF.serif(32)).tracking(-0.6)
-                DFTabs(items: SettingsTab.allCases.map { ($0, $0.rawValue) }, selection: $tab, spacing: 22)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .overlay(alignment: .bottom) { Rectangle().fill(DF.line).frame(height: 1) }
-            }
-            .padding(.horizontal, 28).padding(.top, 26).padding(.bottom, 22)
-            .frame(maxWidth: 728, alignment: .leading).frame(maxWidth: .infinity)
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    switch tab {
-                    case .general: general
-                    case .dictation: VoiceSettingsPanel()
-                    case .audio: AudioSettingsTab()
-                    case .models: models
-                    case .calendars: calendarsTab
-                    case .shortcuts: shortcuts
-                    case .mcp: MCPSettingsTab()
+        HStack(alignment: .top, spacing: 0) {
+            VStack(alignment: .leading, spacing: 1) {
+                ForEach(SettingsTab.allCases) { t in
+                    SettingsNavItem(title: t.title, symbol: t.symbol, on: tab == t) {
+                        withAnimation(.snappy(duration: 0.18)) { tab = t }
                     }
                 }
-                .padding(.horizontal, 28).padding(.bottom, 28)
-                .frame(maxWidth: 728, alignment: .leading).frame(maxWidth: .infinity)
+            }
+            .frame(width: 176, alignment: .leading)
+            .padding(.top, 40)
+
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(tab.title).font(DF.font(32, .bold)).tracking(-0.6)
+                        .padding(.bottom, 22)
+                    VStack(alignment: .leading, spacing: 18) {
+                        switch tab {
+                        case .general: general
+                        case .dictation: VoiceSettingsPanel()
+                        case .audio: AudioSettingsTab()
+                        case .models: models
+                        case .calendars: calendarsTab
+                        case .shortcuts: shortcuts
+                        case .mcp: MCPSettingsTab()
+                        }
+                    }
+                }
+                .padding(.leading, 48).padding(.top, 36).padding(.bottom, 48)
+                .frame(maxWidth: 680, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .id(tab)
             }
         }
+        .padding(.horizontal, 28)
+        .frame(maxWidth: 1000, alignment: .leading)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(DF.paper)
         .font(DF.font(14))
@@ -55,13 +71,13 @@ struct SettingsView: View {
     }
 
     private func header(_ t: String) -> some View {
-        Text(t).font(DF.font(12, .bold)).tracking(1).foregroundStyle(DF.faint).padding(.top, 4)
+        Text(t).font(DF.font(17, .semibold)).padding(.top, 12)
     }
 
     @ViewBuilder private var general: some View {
         AccountCard()
         NotesWriterCard()
-        header("THE PILL")
+        header("The pill")
         VStack(spacing: 0) {
             row("Show the pill", "Appears at the bottom of the screen while you dictate or record") {
                 Toggle("", isOn: $pillVisible).toggleStyle(.df)
@@ -72,12 +88,12 @@ struct SettingsView: View {
             }
         }
         .dfCard()
-        header("PERMISSIONS")
+        header("Permissions")
         PermissionsCard()
     }
 
     @ViewBuilder private var models: some View {
-        header("SPEECH TO TEXT")
+        header("Speech to text")
         SpeechModelsCard()
     }
 
@@ -125,7 +141,7 @@ struct SettingsView: View {
                         .padding(.horizontal, 14).padding(.vertical, 4)
                         .background(Color(hex: 0xFAFAFB), in: RoundedRectangle(cornerRadius: 12))
                         .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(DF.line))
-                        .padding(.horizontal, 20).padding(.bottom, 16)
+                        .padding(.bottom, 16)
                     }
                     Divider().overlay(DF.line)
                     provider("outlook", "Outlook", "Add your work account in System Settings › Internet Accounts") {
@@ -152,7 +168,7 @@ struct SettingsView: View {
             Spacer()
             action()
         }
-        .padding(20)
+        .padding(.vertical, 16)
     }
 
     private func how(_ icon: String, _ text: String) -> some View {
@@ -166,14 +182,14 @@ struct SettingsView: View {
     private func row<A: View>(_ title: String, _ sub: String, last: Bool = false, @ViewBuilder _ trailing: () -> A) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(DF.font(14, .semibold))
+                Text(title).font(DF.font(15, .medium))
                 Text(sub).font(DF.font(13)).foregroundStyle(DF.muted)
             }
             Spacer()
             trailing()
         }
-        .padding(.horizontal, 20).padding(.vertical, 14)
-        .overlay(alignment: .bottom) { if !last { Rectangle().fill(DF.line).frame(height: 1).padding(.horizontal, 20) } }
+        .padding(.vertical, 14)
+        .overlay(alignment: .bottom) { if !last { Rectangle().fill(DF.line).frame(height: 1) } }
     }
 }
 
@@ -192,7 +208,64 @@ private struct ShortcutRow: View {
             Spacer(minLength: 12)
             Text(what).font(DF.font(13)).foregroundStyle(DF.muted).multilineTextAlignment(.trailing)
         }
-        .padding(.horizontal, 20).padding(.vertical, 10)
-        .overlay(alignment: .bottom) { if !last { Divider().overlay(DF.line).padding(.horizontal, 20) } }
+        .padding(.vertical, 10)
+        .overlay(alignment: .bottom) { if !last { Divider().overlay(DF.line) } }
+    }
+}
+
+/// An item in Settings' side list.
+private struct SettingsNavItem: View {
+    let title: String
+    let symbol: String
+    let on: Bool
+    let action: () -> Void
+    @State private var hover = false
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 9) {
+                Image(systemName: symbol).font(.system(size: 12.5)).frame(width: 18).foregroundStyle(on ? DF.ink : DF.muted)
+                Text(title).font(DF.font(15, .medium)).foregroundStyle(on ? DF.ink : Color(hex: 0x5F5E5B)).lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 8).frame(height: 30)
+            .background(RoundedRectangle(cornerRadius: 6).fill(on ? Color.black.opacity(0.05) : hover ? Color.black.opacity(0.03) : .clear))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hover = $0 }
+    }
+}
+
+/// A titled group of plain settings rows.
+struct SettingsSection<C: View>: View {
+    let title: String
+    @ViewBuilder var content: C
+    init(_ title: String, @ViewBuilder content: () -> C) { self.title = title; self.content = content() }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title).font(DF.font(17, .semibold)).padding(.top, 22).padding(.bottom, 8)
+            Hairline()
+            content
+        }
+    }
+}
+
+/// Title and a line under it on the left, a control on the right, a hairline below.
+struct PlainRow<T: View>: View {
+    let title: String
+    let sub: String
+    @ViewBuilder var trailing: T
+    init(_ title: String, _ sub: String, @ViewBuilder trailing: () -> T) { self.title = title; self.sub = sub; self.trailing = trailing() }
+    var body: some View {
+        HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(DF.font(15, .medium))
+                Text(sub).font(DF.font(13)).foregroundStyle(DF.muted).fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            trailing
+        }
+        .padding(.vertical, 12)
+        .overlay(alignment: .bottom) { Hairline() }
     }
 }

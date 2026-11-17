@@ -3,6 +3,8 @@
 // Purist node Psm1qy.
 
 import { useBrand } from '#/lib/brand'
+import { Mark } from '#/components/site/Mark'
+import { Highlight } from './Hero'
 import { Stage, Svg, at, useInViewOnce, useSvgReducedMotion } from './shared'
 
 const WIRES_IN = [
@@ -20,8 +22,8 @@ const WIRES_OUT = [
 
 // The design's wiring (node Pzih50), 1200×520: hairlines, and a honey beam travelling each one.
 const WIRES = `
-  <g fill="none" stroke="rgba(28,25,21,0.16)" stroke-width="1.5">${[...WIRES_IN, ...WIRES_OUT].map((d) => `<path d="${d}"></path>`).join('')}</g>
-  <g fill="none" stroke="#D99A2B" stroke-width="3" stroke-linecap="round" stroke-dasharray="34 420">
+  <g fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="1.5">${[...WIRES_IN, ...WIRES_OUT].map((d) => `<path d="${d}"></path>`).join('')}</g>
+  <g fill="none" stroke="#F2B43A" stroke-width="3" stroke-linecap="round" stroke-dasharray="34 420">
     ${WIRES_IN.map((d, i) => `<path d="${d}"><animate attributeName="stroke-dashoffset" from="454" to="0" dur="2.2s" begin="${i * 0.5}s" repeatCount="indefinite"></animate></path>`).join('')}
     ${WIRES_OUT.map((d, i) => `<path d="${d}"><animate attributeName="stroke-dashoffset" from="454" to="0" dur="2s" begin="${0.2 + i * 0.5}s" repeatCount="indefinite"></animate></path>`).join('')}
   </g>
@@ -29,8 +31,8 @@ const WIRES = `
 
 // Phone and tablet: one short vertical hairline with its beam, between writers → mark → apps.
 const LINK = (begin: number) => `
-  <path d="M 2 0 V 56" fill="none" stroke="rgba(28,25,21,0.16)" stroke-width="1.5"></path>
-  <path d="M 2 0 V 56" fill="none" stroke="#D99A2B" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 70"><animate attributeName="stroke-dashoffset" from="84" to="0" dur="1.6s" begin="${begin}s" repeatCount="indefinite"></animate></path>
+  <path d="M 2 0 V 56" fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="1.5"></path>
+  <path d="M 2 0 V 56" fill="none" stroke="#F2B43A" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 70"><animate attributeName="stroke-dashoffset" from="84" to="0" dur="1.6s" begin="${begin}s" repeatCount="indefinite"></animate></path>
 `
 
 const APPS = [
@@ -59,10 +61,10 @@ function Writer({ logo, name, note, noteClass, ours }: { logo: string; name: str
   return (
     <div
       className={`flex h-[72px] items-center gap-[14px] rounded-[16px] border px-[16px] shadow-[0_1px_2px_rgba(28,25,21,0.05)] ${
-        ours ? 'border-ink bg-honey' : 'border-line bg-white'
+        ours ? 'border-transparent bg-[#FCEBC2]' : 'border-line bg-white'
       }`}
     >
-      <img src={`/landing/${logo}.png`} alt="" className="h-[42px] w-[42px] shrink-0" />
+      {logo === 'oatmeal' ? <Mark size={42} /> : <img src={`/landing/${logo}.png`} alt="" className="h-[42px] w-[42px] shrink-0" />}
       <div className="flex flex-1 flex-col gap-[2px]">
         <span className="text-[16px] font-bold">{name}</span>
         <span className={`text-[13px] font-medium ${noteClass}`}>{note}</span>
@@ -83,13 +85,11 @@ export function YourAI() {
     <section
       ref={svgRoot}
       id="your-ai"
-      className="oat-enter mx-auto flex max-w-[1440px] scroll-mt-[100px] flex-col items-center gap-10 px-5 pt-10 pb-20 sm:gap-[48px] min-[1200px]:pb-[130px]"
+      className="oat-enter mx-auto flex max-w-[1240px] scroll-mt-[100px] flex-col items-center gap-[40px] px-5 pb-[64px] sm:gap-[48px] sm:pb-[96px]"
     >
-      <div className="flex flex-col items-center gap-[18px] text-center">
-        <span className="text-[14px] font-semibold tracking-[1px] text-ink/65 uppercase">Your AI, your notes</span>
-        <h2 className="flex flex-col items-center font-serif font-normal tracking-[-0.035em] text-[clamp(34px,6vw,72px)] leading-[1.06]">
-          <span>Works with every AI</span>
-          <span className="text-umber">you already use</span>
+      <div className="flex flex-col items-center gap-[12px] text-center">
+        <h2 className="font-serif text-[clamp(34px,5.4vw,64px)] leading-[1.08] tracking-[-0.04em] [text-wrap:balance]">
+          Works with every <Highlight tone="blue">AI</Highlight> you already use
         </h2>
         <p className="max-w-[600px] text-[17px] leading-[25px] font-medium text-ink/75 sm:text-[19px] sm:leading-[27px]">
           Your notes are written by the AI you already pay for. Then any app that speaks MCP can search every meeting you've had.
@@ -111,10 +111,10 @@ export function YourAI() {
 
         <MobileLink begin={0} />
         <div
-          className="oat-abs oat-breathe my-4 flex h-[124px] w-[124px] items-center justify-center self-center rounded-[34px] bg-umber shadow-[0_0_0_12px_rgba(246,210,124,0.45),0_0_0_26px_rgba(246,210,124,0.18),0_24px_48px_rgba(28,25,21,0.25)] min-[1200px]:my-0"
+          className="oat-abs oat-breathe my-4 flex h-[124px] w-[124px] items-center justify-center self-center rounded-[34px] shadow-[0_0_0_12px_rgba(252,235,194,0.7),0_0_0_26px_rgba(252,235,194,0.3),0_24px_48px_rgba(0,0,0,0.12)] min-[1200px]:my-0"
           style={at(538, 198, 124, 124)}
         >
-          <img src="/landing/oatmeal.png" alt="" className="h-[124px] w-[124px]" />
+          <Mark size={124} />
         </div>
         <MobileLink begin={0.6} />
 

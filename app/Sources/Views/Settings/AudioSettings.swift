@@ -141,7 +141,7 @@ struct PermissionsCard: View {
                     Text("This is an unsigned development build. macOS forgets Oatmeal\u{2019}s permissions every time it\u{2019}s rebuilt, so you may need to allow them again.")
                         .font(DF.font(12)).foregroundStyle(DF.muted).fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(.horizontal, 20).padding(.vertical, 12)
+                .padding(.vertical, 12)
             }
         }
         .dfCard()
@@ -167,7 +167,7 @@ struct AudioSettingsTab: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("MICROPHONE").font(DF.font(12, .bold)).tracking(1).foregroundStyle(DF.faint).padding(.top, 4)
+            Text("Microphone").font(DF.font(17, .semibold)).foregroundStyle(DF.ink).padding(.top, 4)
             VStack(spacing: 0) {
                 SettingsRow(icon: "mic", title: "Input", sub: inputs.selectedMissing
                             ? "Your chosen mic isn\u{2019}t connected, so Oatmeal is using \(inputs.defaultName)"
@@ -185,7 +185,7 @@ struct AudioSettingsTab: View {
             }
             .dfCard()
 
-            Text("CALL AUDIO").font(DF.font(12, .bold)).tracking(1).foregroundStyle(DF.faint).padding(.top, 4)
+            Text("Call audio").font(DF.font(17, .semibold)).foregroundStyle(DF.ink).padding(.top, 4)
             VStack(spacing: 0) {
                 SettingsRow(icon: "speaker.wave.2", title: "The other side of calls",
                             sub: "Meeting notes also record what plays through your speakers or headphones (Zoom, Meet, Teams). macOS asks for System Audio Recording the first time.", last: true) {
@@ -234,20 +234,16 @@ struct SettingsRow<Trailing: View>: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            if !icon.isEmpty {
-                Image(systemName: icon).font(.system(size: 13)).foregroundStyle(DF.muted)
-                    .frame(width: 30, height: 30).background(DF.wash, in: RoundedRectangle(cornerRadius: 8))
-            }
             if !title.isEmpty || !sub.isEmpty {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(DF.font(14, .semibold))
+                    Text(title).font(DF.font(15, .medium))
                     Text(sub).font(DF.font(13)).foregroundStyle(DF.muted).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 12)
             }
             trailing()
         }
-        .padding(.horizontal, title.isEmpty ? 0 : 20).padding(.vertical, title.isEmpty ? 0 : 14)
-        .overlay(alignment: .bottom) { if !last && !title.isEmpty { Divider().overlay(DF.line).padding(.horizontal, 20) } }
+        .padding(.vertical, title.isEmpty ? 0 : 12)
+        .overlay(alignment: .bottom) { if !last && !title.isEmpty { Divider().overlay(DF.line) } }
     }
 }

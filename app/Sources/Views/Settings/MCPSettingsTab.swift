@@ -31,7 +31,7 @@ struct MCPSettingsTab: View {
                 }
                 .padding(.horizontal, 10).frame(height: 26).background(DF.wash, in: Capsule())
             }
-            .padding(20).dfCard()
+            .padding(.vertical, 16).dfCard()
             SettingsRow(icon: "sparkles", title: "Write meeting notes automatically",
                         sub: claude.available
                             ? "When a meeting ends, \(claude.active?.title ?? "your AI") fixes the transcript and writes the notes, on \(claude.active?.plan ?? "your plan")."
@@ -61,8 +61,8 @@ struct MCPSettingsTab: View {
                             .padding(10).frame(maxWidth: .infinity, alignment: .leading)
                             .background(DF.canvas, in: RoundedRectangle(cornerRadius: 8))
                     }
-                    .padding(.horizontal, 20).padding(.vertical, 14)
-                    .overlay(alignment: .bottom) { if i < clients.count - 1 { Divider().overlay(DF.line).padding(.horizontal, 20) } }
+                    .padding(.vertical, 14)
+                    .overlay(alignment: .bottom) { if i < clients.count - 1 { Divider().overlay(DF.line) } }
                 }
             }
             .dfCard()

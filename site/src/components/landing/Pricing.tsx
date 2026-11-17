@@ -1,15 +1,16 @@
-// "Free to start. Pro when it sticks." A summary of the plans on espresso; prices and features come from
-// oatmeal.config.ts and the full page lives at /pricing. Purist node Pt51qy.
+// "Free to start. Pro when it sticks." A summary of the plans as Notion-style cards; prices and features
+// come from oatmeal.config.ts and the full page lives at /pricing.
 
 import { Link } from '@tanstack/react-router'
 import { config, type PlanConfig } from '../../../oatmeal.config'
+import { Highlight } from './Hero'
 
 function Price({ plan }: { plan: PlanConfig }) {
   return (
     <div className="flex items-baseline gap-[6px]">
-      <span className="text-[48px] font-bold tracking-[-0.03em]">${plan.monthly}</span>
+      <span className="text-[44px] font-semibold tracking-[-0.03em]">${plan.monthly}</span>
       {plan.monthly > 0 && (
-        <span className={`text-[15px] ${plan.id === 'pro' ? 'text-ink/75' : 'text-ink/70'}`}>
+        <span className="text-[15px] text-black/55">
           {plan.id === 'business' ? '/ person / mo' : '/ month'}
         </span>
       )}
@@ -20,14 +21,14 @@ function Price({ plan }: { plan: PlanConfig }) {
 function Action({ plan }: { plan: PlanConfig }) {
   if (plan.comingSoon) {
     return (
-      <div className="flex justify-center rounded-[10px] border-2 border-dashed border-ink/40 p-[14px]">
-        <span className="text-[15px] font-bold text-ink/55">Coming soon</span>
+      <div className="flex min-h-[40px] items-center justify-center rounded-[8px] border border-dashed border-black/20">
+        <span className="text-[15px] font-medium text-black/45">Coming soon</span>
       </div>
     )
   }
   if (plan.monthly === 0) {
     return (
-      <Link to="/download" className="flex justify-center rounded-[10px] border-2 border-ink bg-white p-[14px] text-[15px] font-bold transition-colors hover:bg-wash">
+      <Link to="/download" className="btn-outline min-h-[40px] text-[15px]">
         Get it for Mac
       </Link>
     )
@@ -35,9 +36,7 @@ function Action({ plan }: { plan: PlanConfig }) {
   return (
     <Link
       to="/pricing"
-      className={`flex justify-center rounded-[10px] p-[14px] text-[15px] font-bold transition-colors ${
-        plan.id === 'pro' ? 'bg-ink text-honey hover:bg-[#3a342c]' : 'border-2 border-ink bg-white hover:bg-wash'
-      }`}
+      className={`${plan.id === 'pro' ? 'btn-ink' : 'btn-outline'} min-h-[40px] text-[15px]`}
     >
       Start {plan.name}
     </Link>
@@ -46,34 +45,35 @@ function Action({ plan }: { plan: PlanConfig }) {
 
 export function Pricing() {
   return (
-    <section className="oat-enter flex flex-col items-center gap-10 bg-espresso px-5 py-20 sm:gap-[48px] min-[1200px]:py-[120px]">
-      <h2 className="flex flex-col items-center text-center font-serif font-normal tracking-[-0.035em] text-cream text-[clamp(38px,6vw,72px)] leading-[1.08]">
-        <span>Free to start.</span>
-        <span className="text-honey">Pro when it sticks.</span>
+    <section className="oat-enter mx-auto flex max-w-[1240px] flex-col items-center gap-[40px] px-5 pb-[64px] sm:gap-[48px] sm:pb-[96px]">
+      <h2 className="text-center font-serif text-[clamp(36px,5.4vw,64px)] leading-[1.08] tracking-[-0.04em] [text-wrap:balance]">
+        Free to start. <Highlight tone="green">Pro</Highlight> when it sticks.
       </h2>
-      <div className="grid w-full max-w-[1100px] gap-[24px] md:grid-cols-3">
+      <div className="grid w-full gap-[24px] md:grid-cols-3">
         {config.plans.map((plan) => {
           const pro = plan.id === 'pro'
           return (
             <div
               key={plan.id}
-              className={`flex flex-col gap-[18px] rounded-[20px] border-[1.5px] p-[30px] ${
-                pro ? 'border-ink bg-honey shadow-[4px_4px_0_var(--cream)]' : 'border-ink/90 bg-cream'
+              className={`flex flex-col gap-[18px] rounded-[12px] p-[28px] ${
+                pro
+                  ? 'bg-white shadow-[rgba(0,0,0,0.01)_0_0_1px,rgba(0,0,0,0.02)_0_0_2px,rgba(0,0,0,0.027)_0_2px_7px,rgba(0,0,0,0.06)_0_12px_32px] ring-1 ring-black/10'
+                  : 'bg-[#F9F9F8]'
               }`}
             >
               {pro ? (
                 <div className="flex items-center justify-between">
-                  <span className="font-serif text-[30px]">{plan.name}</span>
-                  <span className="rounded-full bg-ink px-[10px] py-[4px] text-[12px] font-bold text-honey">Most loved</span>
+                  <span className="font-serif text-[26px] tracking-[-0.02em]">{plan.name}</span>
+                  <span className="rounded-full bg-[#DBEDDB] px-[10px] py-[3px] text-[12px] font-medium text-[#2E7D55]">Most loved</span>
                 </div>
               ) : (
-                <span className="font-serif text-[30px]">{plan.name}</span>
+                <span className="font-serif text-[26px] tracking-[-0.02em]">{plan.name}</span>
               )}
               <Price plan={plan} />
               <Action plan={plan} />
               <div className="flex flex-col gap-[10px]">
                 {plan.features.map((f) => (
-                  <span key={f} className="text-[15px]">
+                  <span key={f} className="text-[15px] text-black/80">
                     ✓ {f}
                   </span>
                 ))}

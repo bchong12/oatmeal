@@ -15,8 +15,8 @@ export function PageIntro({
 }) {
   return (
     <section className="mx-auto flex max-w-[760px] flex-col items-center gap-5 px-6 pt-24 pb-12 text-center sm:pt-32">
-      <span className="text-[13px] font-semibold tracking-[1px] text-ink/60 uppercase">{eyebrow}</span>
-      <h1 className="font-serif text-[44px] leading-[1.02] tracking-[-0.03em] sm:text-[68px]">
+      <span className="text-[14px] text-black/55">{eyebrow}</span>
+      <h1 className="font-serif text-[44px] leading-[1.04] tracking-[-0.045em] sm:text-[68px]">
         {title}
         {highlight && (
           <>
@@ -35,6 +35,10 @@ export function PageIntro({
 
 export function Card({ children, className = '', honey = false }: { children: React.ReactNode; className?: string; honey?: boolean }) {
   return (
-    <div className={`rounded-[18px] border-[1.5px] border-ink shadow-[4px_4px_0_var(--ink)] ${honey ? 'bg-honey' : 'bg-paper'} ${className}`}>{children}</div>
+    <div
+      className={`rounded-[12px] ${honey ? 'bg-white ring-1 ring-black/10 shadow-[rgba(0,0,0,0.027)_0_2px_7px,rgba(0,0,0,0.06)_0_12px_32px]' : 'bg-[#F9F9F8]'} ${className}`}
+    >
+      {children}
+    </div>
   )
 }

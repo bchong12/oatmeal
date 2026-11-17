@@ -43,6 +43,8 @@
 	<string>Oatmeal names your meeting notes after the event in your calendar.</string>
 	<key>NSCalendarsUsageDescription</key>
 	<string>Oatmeal names your meeting notes after the event in your calendar.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Oatmeal puts your face in a bubble on screen recordings, when you turn the camera on.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Oatmeal turns what you say into text and meeting notes, transcribed on your Mac.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

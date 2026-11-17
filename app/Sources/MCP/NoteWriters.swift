@@ -238,6 +238,12 @@ final class NoteWriters: ObservableObject {
         p.executableURL = URL(fileURLWithPath: path)
         p.arguments = args
         var env = ProcessInfo.processInfo.environment
+        // Opened from inside a Claude Code session, Oatmeal inherits that session's settings (its own
+        // proxy as ANTHROPIC_BASE_URL, session tokens). Passed on, they make the CLI sign in through the
+        // wrong place ("Invalid API key"). Drop them so it uses the user's own login.
+        for key in env.keys where key.hasPrefix("CLAUDE") || key == "ANTHROPIC_BASE_URL" || key == "ANTHROPIC_AUTH_TOKEN" {
+            env[key] = nil
+        }
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         env["PATH"] = ["/opt/homebrew/bin", "/usr/local/bin", "\(home)/.local/bin", "\(home)/.npm-global/bin", "\(home)/.claude/local",
                        env["PATH"] ?? "/usr/bin:/bin"].joined(separator: ":")
@@ -260,7 +266,12 @@ final class NoteWriters: ObservableObject {
         // Claude: `{ "is_error": Bool, "result": String }`. Gemini: `{ "response": ..., "error": {...} }`.
         if let json = try? JSONSerialization.jsonObject(with: stdout) as? [String: Any] {
             if json["is_error"] as? Bool == true {
-                return .failure((json["result"] as? String).map { String($0.prefix(200)) } ?? "\(kind.title) stopped with an error.")
+                let result = (json["result"] as? String) ?? ""
+                let l = result.lowercased()
+                if l.contains("login") || l.contains("logged in") || l.contains("api key") {
+                    return .failure("\(kind.title) isn\u{2019}t signed in on this Mac. Open Terminal, run `\(kind.command)`, type /login, then Try again.")
+                }
+                return .failure(result.isEmpty ? "\(kind.title) stopped with an error." : String(result.prefix(200)))
             }
             if let e = json["error"] as? [String: Any], let m = e["message"] as? String { return .failure(String(m.prefix(200))) }
         }
@@ -279,7 +290,9 @@ final class NoteWriters: ObservableObject {
         var found: [NoteWriterKind: String] = [:]
         for k in NoteWriterKind.clis {
             let c = k.command
-            let known = ["/opt/homebrew/bin/\(c)", "/usr/local/bin/\(c)", "\(home)/.local/bin/\(c)", "\(home)/.npm-global/bin/\(c)", "\(home)/.claude/local/\(c)"]
+            // The native installers (~/.local/bin, ~/.claude/local) keep themselves up to date, so they go
+            // before Homebrew and npm copies, which are often old and signed in differently.
+            let known = ["\(home)/.local/bin/\(c)", "\(home)/.claude/local/\(c)", "/opt/homebrew/bin/\(c)", "/usr/local/bin/\(c)", "\(home)/.npm-global/bin/\(c)"]
             if let hit = known.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) { found[k] = hit; continue }
             found[k] = await Task.detached(priority: .utility) { () -> String in
                 let p = Process()

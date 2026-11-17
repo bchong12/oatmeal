@@ -1,5 +1,5 @@
 // Every page's frame: the floating white nav at the top and the footer with the giant wordmark at the
-// bottom. Built from the Purist "Oatmeal · landing (fun)" design (nav Ppt1qy, footer Puj1qy).
+// bottom. Notion-style: a plain white bar on top, a quiet footer with the giant wordmark.
 
 import { Link } from '@tanstack/react-router'
 import { useBrand } from '#/lib/brand'
@@ -8,17 +8,20 @@ import { AppleLogo, Mark } from './Mark'
 function Nav() {
   const brand = useBrand()
   return (
-    <header className="sticky top-[20px] z-40 mx-auto mt-[20px] flex h-[60px] w-[calc(100%-32px)] max-w-[1000px] items-center justify-between rounded-[14px] border border-line bg-white/80 pr-[8px] pl-[14px] shadow-[0_1px_2px_rgba(28,25,21,0.04),0_8px_24px_-12px_rgba(28,25,21,0.18)] backdrop-blur-md sm:pl-[18px]">
+    <header className="sticky top-0 z-40 mx-auto flex h-[64px] w-full max-w-[1240px] items-center justify-between bg-white/95 px-5 backdrop-blur-md">
       <Link to="/" className="flex min-w-0 items-center gap-[8px]">
         <Mark size={28} className="shrink-0" />
-        <span className="truncate font-serif text-[22px] tracking-[-0.02em]">{brand.name.toLowerCase()}</span>
+        <span className="truncate font-serif text-[19px] tracking-[-0.02em]">{brand.name}</span>
       </Link>
-      <nav className="flex items-center gap-[20px] text-[14px] font-medium text-ink/70">
+      <nav className="flex items-center gap-[20px] text-[15px] font-medium text-black/75">
         <Link to="/" hash="flow" className="hidden transition-colors hover:text-ink md:block">
           Flow
         </Link>
         <Link to="/" hash="notes" className="hidden transition-colors hover:text-ink md:block">
           Notes
+        </Link>
+        <Link to="/" hash="capture" className="hidden transition-colors hover:text-ink md:block">
+          Capture
         </Link>
         <Link to="/" hash="your-ai" className="hidden transition-colors hover:text-ink sm:block">
           Your AI
@@ -28,7 +31,7 @@ function Nav() {
         </Link>
         <Link
           to="/download"
-          className="flex shrink-0 items-center gap-[8px] rounded-[8px] border-[1.5px] whitespace-nowrap border-ink bg-honey px-[14px] py-[9px] text-[14px] font-bold text-ink transition-transform hover:-translate-y-px sm:px-[16px] sm:py-[10px]"
+          className="btn-ink shrink-0 px-[14px] py-[8px] text-[14px] whitespace-nowrap"
         >
           <AppleLogo size={14} />
           Get it for Mac
@@ -40,10 +43,10 @@ function Nav() {
 
 function Footer() {
   const brand = useBrand()
-  const link = 'text-[14px] font-semibold transition-colors hover:text-ink/60'
+  const link = 'text-[14px] font-medium text-black/70 transition-colors hover:text-ink'
   return (
     <footer className="mx-auto flex max-w-[1240px] flex-col overflow-hidden px-5 pt-[48px]">
-      <div className="flex flex-col gap-4 border-b-2 border-ink pb-[20px] sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 border-b border-line pb-[20px] sm:flex-row sm:items-center sm:justify-between">
         <nav className="flex flex-wrap gap-x-[26px] gap-y-2">
           <Link to="/" hash="flow" className={link}>
             Flow
@@ -75,7 +78,7 @@ function Footer() {
         className="flex items-center justify-center gap-[0.12em] py-[0.15em] text-[min(230px,calc((100vw-40px)*0.2))]"
       >
         <Mark size={0} className="h-[1em] w-[1em] shrink-0" />
-        <span className="font-serif text-[1em] leading-[1.13] tracking-[-0.05em] whitespace-nowrap">{brand.name.toLowerCase()}</span>
+        <span className="font-serif text-[1em] leading-[1.13] tracking-[-0.06em] whitespace-nowrap">{brand.name}</span>
       </div>
     </footer>
   )
