@@ -2,7 +2,7 @@ name: Oatmeal
 options:
   bundleIdPrefix: com.oatmeal
   deploymentTarget:
-    macOS: "14.0"
+    macOS: "26.0"
   xcodeVersion: "16.0"
   createIntermediateGroups: true
 
@@ -42,7 +42,7 @@ targets:
         PRODUCT_NAME: Oatmeal
         CODE_SIGN_ENTITLEMENTS: Resources/Oatmeal.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: ""
-        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        MACOSX_DEPLOYMENT_TARGET: "26.0"
         SWIFT_VERSION: "5.9"
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: Resources/Info.plist
@@ -99,7 +99,7 @@ targets:
       base:
         GENERATE_INFOPLIST_FILE: YES
         PRODUCT_BUNDLE_IDENTIFIER: com.oatmeal.app.tests
-        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        MACOSX_DEPLOYMENT_TARGET: "26.0"
         SWIFT_VERSION: "5.9"
         BUNDLE_LOADER: "$(TEST_HOST)"
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Oatmeal.app/Contents/MacOS/Oatmeal"

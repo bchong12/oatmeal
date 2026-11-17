@@ -23,7 +23,7 @@ function Download() {
     <Shell>
       <PageIntro eyebrow="Download" title={`${brand.name} for Mac`}>
         <p className="max-w-[520px] text-[18px] leading-[27px] text-muted">
-          Free. Needs macOS 14 or later. Recording, transcription and dictation all run on your Mac.
+          Free. Needs macOS 26 or later. Recording, transcription and dictation all run on your Mac.
         </p>
         {download.ready ? (
           <a href={download.url} className="btn-honey mt-2 px-7 py-4 text-[17px]">

@@ -127,7 +127,7 @@ export function Hero() {
           Talk into any app and Flow types it. Hang up a call and Notes has already written it up. One free Mac app.
         </p>
         <MacCta label={`Get ${brand.name} for Mac`} />
-        <span className="text-[14px] text-ink/60">Free · macOS 14 or later · Runs on your Mac</span>
+        <span className="text-[14px] text-ink/60">Free · macOS 26 or later · Runs on your Mac</span>
       </div>
 
       {/* Desktop: the design's 1440×400 stream art, scaled to fit. */}
