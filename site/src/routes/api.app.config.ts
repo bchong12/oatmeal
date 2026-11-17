@@ -13,9 +13,7 @@ export const Route = createFileRoute('/api/app/config')({
         return json({
           brand: brandFrom(env.read).name,
           signIn: Boolean(env.whopAppId && env.sessionSecret),
-          oatmealAI: Boolean(env.anthropicKey),
           signInUrl: `${base}/api/auth/whop?app=1`,
-          pricingUrl: `${base}/pricing`,
           accountUrl: `${base}/account`,
         })
       },

@@ -1,41 +1,13 @@
-// "Works with every AI you already use": the AIs that write your notes on the left, the mark in the
-// middle, and every MCP app that can ask your meetings on the right. Solid hairlines carry honey beams.
-// Purist node Psm1qy.
+// "Works with the AI you already use", laid out like notion.com's "AI where your team works": two grey
+// cards (a small label, one bold line, a round arrow) over white sheets of real product UI, with app
+// logos floating at the edges and an ask bar on top. Left: Oatmeal's own "Who writes your notes"
+// setting. Right: asking Claude about a meeting, answered through Oatmeal's MCP with the meeting cited.
 
-import { useBrand } from '#/lib/brand'
-import { Mark } from '#/components/site/Mark'
+import { Face, Mark } from '#/components/site/Mark'
+import { Card, Sheet } from './Features'
 import { Highlight } from './Hero'
-import { Stage, Svg, at, useInViewOnce, useSvgReducedMotion } from './shared'
 
-const WIRES_IN = [
-  'M 310 106 C 430 106, 430 260, 538 260',
-  'M 310 196 C 430 196, 440 260, 538 260',
-  'M 310 286 C 430 286, 440 260, 538 260',
-  'M 310 376 C 430 376, 430 260, 538 260',
-]
-const WIRES_OUT = [
-  'M 662 260 C 760 260, 760 108, 836 108',
-  'M 662 260 C 760 260, 770 218, 836 218',
-  'M 662 260 C 760 260, 770 328, 836 328',
-  'M 662 260 C 760 260, 760 438, 836 438',
-]
-
-// The design's wiring (node Pzih50), 1200×520: hairlines, and a honey beam travelling each one.
-const WIRES = `
-  <g fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="1.5">${[...WIRES_IN, ...WIRES_OUT].map((d) => `<path d="${d}"></path>`).join('')}</g>
-  <g fill="none" stroke="#F2B43A" stroke-width="3" stroke-linecap="round" stroke-dasharray="34 420">
-    ${WIRES_IN.map((d, i) => `<path d="${d}"><animate attributeName="stroke-dashoffset" from="454" to="0" dur="2.2s" begin="${i * 0.5}s" repeatCount="indefinite"></animate></path>`).join('')}
-    ${WIRES_OUT.map((d, i) => `<path d="${d}"><animate attributeName="stroke-dashoffset" from="454" to="0" dur="2s" begin="${0.2 + i * 0.5}s" repeatCount="indefinite"></animate></path>`).join('')}
-  </g>
-`
-
-// Phone and tablet: one short vertical hairline with its beam, between writers → mark → apps.
-const LINK = (begin: number) => `
-  <path d="M 2 0 V 56" fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="1.5"></path>
-  <path d="M 2 0 V 56" fill="none" stroke="#F2B43A" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 70"><animate attributeName="stroke-dashoffset" from="84" to="0" dur="1.6s" begin="${begin}s" repeatCount="indefinite"></animate></path>
-`
-
-const APPS = [
+const ASK_FROM = [
   { name: 'Claude', logo: 'claude' },
   { name: 'ChatGPT', logo: 'openai' },
   { name: 'Cursor', logo: 'cursor' },
@@ -49,103 +21,131 @@ const APPS = [
   { name: 'n8n', logo: 'n8n' },
 ]
 
-function Label({ children, className = '', style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+function Logo({ logo, size = 22 }: { logo: string; size?: number }) {
+  return <img src={`/landing/${logo}.png`} alt="" className="shrink-0 rounded-[6px]" style={{ width: size, height: size }} />
+}
+
+/** An app icon floating at a sheet's edge, as notion.com floats Salesforce and Slack around its dashboard. */
+function Float({ logo, className }: { logo: string; className: string }) {
   return (
-    <span className={`text-[12px] font-bold tracking-[1px] text-ink/50 uppercase ${className}`} style={style}>
-      {children}
+    <span className={`oat-float absolute z-10 flex h-[44px] w-[44px] items-center justify-center rounded-[12px] bg-white shadow-[0_6px_18px_rgba(0,0,0,0.1)] ${className}`}>
+      <Logo logo={logo} size={26} />
     </span>
   )
 }
 
-function Writer({ logo, name, note, noteClass, ours }: { logo: string; name: string; note: string; noteClass: string; ours?: boolean }) {
+function Radio({ on }: { on?: boolean }) {
   return (
-    <div
-      className={`flex h-[72px] items-center gap-[14px] rounded-[16px] border px-[16px] shadow-[0_1px_2px_rgba(28,25,21,0.05)] ${
-        ours ? 'border-transparent bg-[#FCEBC2]' : 'border-line bg-white'
-      }`}
-    >
-      {logo === 'oatmeal' ? <Mark size={42} /> : <img src={`/landing/${logo}.png`} alt="" className="h-[42px] w-[42px] shrink-0" />}
-      <div className="flex flex-1 flex-col gap-[2px]">
-        <span className="text-[16px] font-bold">{name}</span>
-        <span className={`text-[13px] font-medium ${noteClass}`}>{note}</span>
-      </div>
-    </div>
+    <span className={`flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-full border-[1.5px] ${on ? 'border-ink' : 'border-[#D3D1CB]'}`}>
+      {on && <span className="h-[8px] w-[8px] rounded-full bg-ink" />}
+    </span>
   )
 }
 
-function MobileLink({ begin }: { begin: number }) {
-  return <Svg html={LINK(begin)} viewBox="0 0 4 56" width={4} height={56} className="oat-mobile self-center" />
+/** Oatmeal's Settings › General: who writes your notes. */
+function WritersPicture() {
+  const row = (logo: string, name: string, note: string, on?: boolean, good?: boolean) => (
+    <div key={name} className="flex items-center gap-[12px] border-t border-[#EFEFED] py-[10px] first:border-t-0">
+      <Logo logo={logo} size={30} />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <span className="text-[14px] font-semibold">{name}</span>
+        <span className={`truncate text-[12px] ${good ? 'text-[#2E7D55]' : 'text-black/45'}`}>{note}</span>
+      </div>
+      <Radio on={on} />
+    </div>
+  )
+  return (
+    <>
+      <Sheet className="h-[86%] gap-[6px]">
+        <span className="text-[12px] text-black/45">Settings · General</span>
+        <span className="pb-[4px] text-[16px] font-semibold">Who writes your notes</span>
+        <div className="flex flex-col">
+          {row('claude', 'Claude Code', 'Found on this Mac · your Claude plan', true, true)}
+          {row('openai', 'Codex', 'Found on this Mac · your ChatGPT plan', false, true)}
+          {row('gemini', 'Gemini CLI', 'Not installed · npm i -g @google/gemini-cli')}
+        </div>
+        <div className="mt-[6px] flex items-center gap-[12px] border-t border-[#EFEFED] pt-[12px]">
+          <div className="flex min-w-0 flex-1 flex-col">
+            <span className="text-[14px] font-semibold">Write meeting notes automatically</span>
+            <span className="truncate text-[12px] text-black/45">Your AI fixes the transcript and writes them up</span>
+          </div>
+          <span className="flex h-[20px] w-[34px] shrink-0 items-center justify-end rounded-full bg-ink p-[2px]">
+            <span className="h-[16px] w-[16px] rounded-full bg-white" />
+          </span>
+        </div>
+      </Sheet>
+    </>
+  )
+}
+
+/** Asking Claude about a meeting: it calls Oatmeal's MCP server and answers with the meeting cited. */
+function AskPicture() {
+  return (
+    <>
+      <Float logo="openai" className="top-[30px] left-[12px] [animation-delay:-0.4s]" />
+      <Float logo="cursor" className="top-[70px] right-[12px] [animation-delay:-1s]" />
+      <Float logo="raycast" className="bottom-[86px] left-[8px] [animation-delay:-0.2s]" />
+      <Sheet className="h-[86%] max-w-[86%] gap-[10px]">
+        <div className="flex items-center gap-[8px] text-[13px] font-semibold">
+          <Logo logo="claude" size={20} />
+          Claude
+        </div>
+        <span className="self-end rounded-[12px] bg-[#F1F1EF] px-[12px] py-[7px] text-[14px]">What did Maya and I decide about the launch?</span>
+        <span className="flex items-center gap-[7px] self-start rounded-[8px] border border-black/[0.08] px-[9px] py-[5px] text-[12px] text-black/55">
+          <Mark size={16} />
+          Used Oatmeal · get_meeting
+        </span>
+        <span className="text-[14px] leading-[21px] text-black/85">
+          You moved the launch to <b className="font-semibold text-ink">Thursday at 9 AM</b>. Onboarding gets one more pass first, and Maya sends the launch post before Friday.
+        </span>
+        <span className="flex items-center gap-[6px] self-start rounded-[6px] bg-[#F7F7F5] px-[8px] py-[4px] text-[12px] text-black/60">
+          <span className="flex h-[14px] w-[14px] items-end justify-center overflow-hidden rounded-[3px] bg-[#FCEBC2]">
+            <Face className="h-[16px] w-[16px] max-w-none translate-y-[2px]" />
+          </span>
+          Launch review with Maya · Nov 16
+        </span>
+      </Sheet>
+      {/* The ask bar on top, as notion.com puts its question over the dashboard. */}
+      <div className="absolute bottom-[16px] left-1/2 z-10 flex w-[min(88%,380px)] -translate-x-1/2 items-center gap-[10px] rounded-[12px] border border-black/[0.08] bg-white py-[8px] pr-[8px] pl-[14px] text-[14px] shadow-[0_8px_22px_rgba(0,0,0,0.1)]">
+        <span className="flex-1 truncate text-black/45">What did Jordan say about the FAQ?</span>
+        <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-[#D97757] text-white">
+          <svg viewBox="0 0 24 24" className="h-[13px] w-[13px]" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M12 19V5M5 12l7-7 7 7" />
+          </svg>
+        </span>
+      </div>
+    </>
+  )
 }
 
 export function YourAI() {
-  const brand = useBrand()
-  const svgRoot = useSvgReducedMotion<HTMLElement>()
-  const [gridRef, gridIn] = useInViewOnce<HTMLDivElement>()
   return (
-    <section
-      ref={svgRoot}
-      id="your-ai"
-      className="oat-enter mx-auto flex max-w-[1240px] scroll-mt-[100px] flex-col items-center gap-[40px] px-5 pb-[64px] sm:gap-[48px] sm:pb-[96px]"
-    >
+    <section id="your-ai" className="oat-enter mx-auto flex max-w-[1240px] scroll-mt-[100px] flex-col gap-[40px] px-5 pb-[64px] sm:gap-[48px] sm:pb-[96px]">
       <div className="flex flex-col items-center gap-[12px] text-center">
-        <h2 className="font-serif text-[clamp(34px,5.4vw,64px)] leading-[1.08] tracking-[-0.04em] [text-wrap:balance]">
-          Works with every <Highlight tone="blue">AI</Highlight> you already use
+        <h2 className="font-serif text-[clamp(32px,4.4vw,48px)] leading-[1.1] tracking-[-0.035em] [text-wrap:balance]">
+          Works with the <Highlight tone="blue">AI</Highlight> you already use.
         </h2>
-        <p className="max-w-[600px] text-[17px] leading-[25px] font-medium text-ink/75 sm:text-[19px] sm:leading-[27px]">
-          Your notes are written by the AI you already pay for. Then any app that speaks MCP can search every meeting you've had.
-        </p>
+        <p className="max-w-[600px] text-[18px] leading-[27px] text-black/70">Your notes are written by the AI you already pay for. Then any app that speaks MCP can ask about every meeting you&rsquo;ve had.</p>
       </div>
-
-      <Stage w={1200} h={520} className="mx-auto max-w-[520px]" innerClassName="flex flex-col gap-4">
-        <Svg html={WIRES} viewBox="0 0 1200 520" width={1200} height={520} className="oat-desktop absolute top-0 left-0" />
-
-        <Label className="oat-abs" style={at(0, 30)}>
-          Writes your notes with
-        </Label>
-        <div className="oat-abs flex flex-col gap-[12px] min-[1200px]:gap-[18px]" style={at(0, 70, 310)}>
-          <Writer logo="claude" name="Claude Code" note="Found on this Mac" noteClass="text-good" />
-          <Writer logo="openai" name="Codex" note="On your ChatGPT plan" noteClass="text-ink/55" />
-          <Writer logo="gemini" name="Gemini CLI" note="On your Google account" noteClass="text-ink/55" />
-          <Writer logo="oatmeal" name={`${brand.name} AI`} note="Nothing to install · Pro" noteClass="text-ink/70" ours />
-        </div>
-
-        <MobileLink begin={0} />
-        <div
-          className="oat-abs oat-breathe my-4 flex h-[124px] w-[124px] items-center justify-center self-center rounded-[34px] shadow-[0_0_0_12px_rgba(252,235,194,0.7),0_0_0_26px_rgba(252,235,194,0.3),0_24px_48px_rgba(0,0,0,0.12)] min-[1200px]:my-0"
-          style={at(538, 198, 124, 124)}
-        >
-          <Mark size={124} />
-        </div>
-        <MobileLink begin={0.6} />
-
-        <Label className="oat-abs" style={at(846, 30)}>
-          Ask your meetings from
-        </Label>
-        <div
-          ref={gridRef}
-          data-in={gridIn || undefined}
-          className="oat-abs oat-reveal grid grid-cols-3 gap-[10px] sm:gap-[14px] min-[1200px]:grid-cols-[repeat(3,108px)]"
-          style={at(846, 60, 354)}
-        >
-          {APPS.map((app, i) => (
-            <div
-              key={app.name}
-              className="flex h-[96px] flex-col items-center justify-center gap-[7px] rounded-[16px] border border-ink/10 bg-white"
-              style={{ '--anim': `oat-pop-in 0.45s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.05}s` } as React.CSSProperties}
-            >
-              <img src={`/landing/${app.logo}.png`} alt="" className="h-[40px] w-[40px]" />
-              <span className="text-[12px] font-semibold">{app.name}</span>
-            </div>
+      <div className="grid gap-[24px] md:grid-cols-2">
+        <Card id="writers" label="Your AI writes them" title="Notes written on the plan you already have." picture="aspect-[4/3] md:aspect-[16/12]">
+          <WritersPicture />
+        </Card>
+        <Card id="ask" label="Ask your meetings" title="Ask any AI about any meeting." picture="aspect-[4/3] md:aspect-[16/12]">
+          <AskPicture />
+        </Card>
+      </div>
+      <div className="flex flex-col items-center gap-[14px]">
+        <span className="text-[14px] text-black/50">Ask from any app that speaks MCP</span>
+        <div className="flex flex-wrap items-center justify-center gap-x-[22px] gap-y-[12px]">
+          {ASK_FROM.map((a) => (
+            <span key={a.name} className="flex items-center gap-[7px] text-[14px] font-medium text-black/60">
+              <Logo logo={a.logo} size={20} />
+              {a.name}
+            </span>
           ))}
-          <div
-            className="flex h-[96px] flex-col items-center justify-center gap-[4px] rounded-[16px] border-[1.5px] border-dashed border-ink/25"
-            style={{ '--anim': `oat-pop-in 0.45s cubic-bezier(0.34,1.56,0.64,1) ${APPS.length * 0.05}s` } as React.CSSProperties}
-          >
-            <span className="font-serif text-[22px]">+ any</span>
-            <span className="text-[12px] font-semibold text-ink/60">MCP app</span>
-          </div>
         </div>
-      </Stage>
+      </div>
     </section>
   )
 }

@@ -3,7 +3,8 @@ import { Shell } from '#/components/site/Shell'
 import { Closing } from '#/components/landing/Closing'
 import { Features } from '#/components/landing/Features'
 import { Hero } from '#/components/landing/Hero'
-import { Pricing } from '#/components/landing/Pricing'
+import { Faq } from '#/components/landing/Faq'
+import { WhyFree } from '#/components/landing/WhyFree'
 import { LandingStyles } from '#/components/landing/shared'
 import { YourAI } from '#/components/landing/YourAI'
 
@@ -20,7 +21,8 @@ function Landing() {
         <Hero />
         <Features />
         <YourAI />
-        <Pricing />
+        <WhyFree />
+        <Faq />
         <Closing />
       </div>
     </Shell>

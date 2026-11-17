@@ -14,10 +14,6 @@ export const env = {
   get sessionSecret() {
     return read('SESSION_SECRET')
   },
-  /** Turns on Oatmeal AI: Pro members without their own AI get notes written with this Claude key. */
-  get anthropicKey() {
-    return read('ANTHROPIC_API_KEY')
-  },
   get downloadUrl() {
     return read('DOWNLOAD_URL')
   },
@@ -25,7 +21,7 @@ export const env = {
   get whopAppId() {
     return read('APP_ID') || read('WHOP_APP_ID')
   },
-  /** Whop hosting sets this to the business that owns the app; its products are the plans for sale. */
+  /** Whop hosting sets this to the business that owns the app. */
   get whopAccountId() {
     return read('WHOP_ACCOUNT_ID')
   },
@@ -39,9 +35,5 @@ export const env = {
   /** Whop hosting sets this to the API origin its key-injecting proxy answers on. */
   get whopApiOrigin() {
     return (read('WHOP_API_ORIGIN') || 'https://api.whop.com').replace(/\/$/, '')
-  },
-  /** Plan links and product ids can be pinned with secrets; they win over the store lookup. */
-  plan(id: string, field: 'URL' | 'YEARLY_URL' | 'PRODUCT_ID') {
-    return read(`PLAN_${id.toUpperCase()}_${field}`)
   },
 }

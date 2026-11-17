@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Check, X } from 'lucide-react'
+import { Check } from 'lucide-react'
 import { useState } from 'react'
 import { Card, PageIntro } from '#/components/site/Page'
 import { Shell } from '#/components/site/Shell'
@@ -56,8 +56,7 @@ function Setup() {
   const s = Route.useLoaderData()
   const app = s.appId ? ` --app ${s.appId}` : ''
   const secret = (pair: string) => `whop apps secrets set${app} --secret ${pair}`
-  const storeDone = s.plans.filter((p) => !p.comingSoon).every((p) => p.linked)
-  const required = [s.sessionSecret, storeDone]
+  const required = [s.sessionSecret]
   const left = required.filter((d) => !d).length
 
   return (
@@ -75,35 +74,11 @@ function Setup() {
           <CopyLine value={secret('SESSION_SECRET=$(openssl rand -hex 32)')} />
         </Step>
 
-        <Step n={2} title="Products in your store" done={storeDone}>
-          <p>
-            Each plan sells through the product in your store whose title contains its name. Deploying the blueprint copied them; if one is missing or
-            renamed, fix it in your dashboard under Products.
-          </p>
-          <ul className="grid gap-2 sm:grid-cols-3">
-            {s.plans.map((p) => (
-              <li key={p.id} className={`flex items-center gap-2 ${p.linked ? 'text-ink' : ''}`}>
-                {p.linked ? <Check size={15} className="text-good" aria-label="On sale" /> : <X size={15} aria-label="Missing" />}
-                {p.name}
-                {p.comingSoon && <span className="text-[12px] text-ink/45">(coming soon)</span>}
-              </li>
-            ))}
-          </ul>
-        </Step>
-
-        <Step n={3} title="The Mac download" done={s.downloadConfigured || s.download.ready} optional>
+        <Step n={2} title="The Mac download" done={s.downloadConfigured || s.download.ready} optional>
           <p>
             "Download for Mac" points at the open-source app's latest release. To ship your own signed build instead, upload it anywhere and set its link:
           </p>
           <CopyLine value={secret('DOWNLOAD_URL=https://example.com/Oatmeal.dmg')} />
-        </Step>
-
-        <Step n={4} title="Oatmeal AI" done={s.oatmealAI} optional>
-          <p>
-            Lets Pro members get notes written without installing Claude Code, Codex or Gemini CLI. Uses your Claude API key (console.anthropic.com),
-            so you pay for those notes.
-          </p>
-          <CopyLine value={secret('ANTHROPIC_API_KEY=sk-ant-...')} />
         </Step>
 
         <li className="grid gap-4 border-t border-line py-7 md:grid-cols-[260px_minmax(0,1fr)] md:gap-10">
@@ -127,8 +102,8 @@ function Setup() {
       </ol>
       <div className="mx-auto max-w-[1000px] px-6 pt-8">
         <Card className="p-6 text-[15px] leading-[23px] text-muted">
-          <strong className="text-ink">Your customers:</strong> they download the app, click "Connect" on your download or account page, and sign in from
-          Settings › Account. The app then checks their plan with this site, so a Pro purchase in your store unlocks Pro in the app straight away.
+          <strong className="text-ink">Your users:</strong> they download the app and use it, free. Clicking "Connect" on your download or account page
+          and signing in from Settings › Account links the app to your site.
         </Card>
       </div>
     </Shell>

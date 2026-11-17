@@ -26,8 +26,8 @@ function Nav() {
         <Link to="/" hash="your-ai" className="hidden transition-colors hover:text-ink sm:block">
           Your AI
         </Link>
-        <Link to="/pricing" className="hidden transition-colors hover:text-ink sm:block">
-          Pricing
+        <Link to="/" hash="faq" className="hidden transition-colors hover:text-ink sm:block">
+          FAQ
         </Link>
         <Link
           to="/download"
@@ -54,9 +54,12 @@ function Footer() {
           <Link to="/" hash="notes" className={link}>
             Notes
           </Link>
-          <Link to="/pricing" className={link}>
-            Pricing
+          <Link to="/" hash="faq" className={link}>
+            FAQ
           </Link>
+          <a href="https://github.com/bchong12/oatmeal" target="_blank" rel="noreferrer" className={link}>
+            GitHub
+          </a>
           <Link to="/privacy" className={link}>
             Privacy
           </Link>

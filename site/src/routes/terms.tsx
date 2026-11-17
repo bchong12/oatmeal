@@ -17,8 +17,8 @@ function Terms() {
         You're responsible for telling people when you record a call and for following the recording laws where you and they are. Some places
         require everyone's consent.
       </p>
-      <h2>Plans</h2>
-      <p>Paid plans renew until you cancel, which you can do from your account any time. You keep the plan until the end of the period you paid for.</p>
+      <h2>Price</h2>
+      <p>Oatmeal is free. There are no paid plans and nothing renews.</p>
       <h2>Contact</h2>
       <p>{supportEmail}</p>
     </LegalPage>

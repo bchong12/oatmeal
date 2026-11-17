@@ -7,7 +7,7 @@ import { Face } from '#/components/site/Mark'
 import { SLACK } from './logos'
 import { Bars, Svg } from './shared'
 
-function Card({ id, label, title, children }: { id: string; label: string; title: string; children: React.ReactNode }) {
+export function Card({ id, label, title, children, picture = 'aspect-[4/3]' }: { id: string; label: string; title: string; children: React.ReactNode; picture?: string }) {
   return (
     <article id={id} className="flex scroll-mt-[100px] flex-col overflow-hidden rounded-[12px] bg-[#F9F9F8]">
       <header className="flex flex-col gap-[8px] p-[24px]">
@@ -23,13 +23,13 @@ function Card({ id, label, title, children }: { id: string; label: string; title
           </Link>
         </div>
       </header>
-      <div className="relative flex aspect-[4/3] items-end justify-center overflow-hidden px-[24px] pt-[24px]">{children}</div>
+      <div className={`relative flex items-end justify-center overflow-hidden px-[24px] pt-[24px] ${picture}`}>{children}</div>
     </article>
   )
 }
 
 /** The white sheet a card's picture sits on: rounded at the top, running off the bottom. */
-function Sheet({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+export function Sheet({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
     <div
       className={`flex w-full flex-col gap-[12px] rounded-t-[12px] bg-white p-[20px] text-[14px] leading-[21px] shadow-[rgba(0,0,0,0.01)_0_0_1px,rgba(0,0,0,0.02)_0_0_2px,rgba(0,0,0,0.027)_0_2px_7px,rgba(0,0,0,0.04)_0_4px_18px] ${className}`}
@@ -45,7 +45,7 @@ function FlowPicture() {
       <Sheet className="h-[86%]">
         <div className="flex items-center gap-[8px] text-[13px] font-semibold">
           <Svg html={SLACK} viewBox="0 0 24 24" className="h-[16px] w-[16px]" />
-          #pricing
+          #launch
         </div>
         <div className="flex gap-[10px]">
           <span className="flex h-[30px] w-[30px] shrink-0 items-end justify-center overflow-hidden rounded-[8px] bg-[#FCEBC2]">
@@ -54,12 +54,12 @@ function FlowPicture() {
           <div className="flex flex-col">
             <span className="text-[13px] font-semibold">You</span>
             <span className="text-black/80">
-              Can you ask Maya on Friday whether the pricing email went out?<span className="ml-[1px] inline-block h-[16px] w-[2px] translate-y-[3px] bg-ink" />
+              Can you ask Maya on Friday whether the launch post went out?<span className="ml-[1px] inline-block h-[16px] w-[2px] translate-y-[3px] bg-ink" />
             </span>
           </div>
         </div>
         <div className="mt-auto mb-[44px] rounded-[8px] border border-black/10 px-[12px] py-[9px] text-[13px] text-black/40">
-          “so um can you check if the pricing email… actually just ask Maya on Friday”
+          “so um can you check if the launch post… actually just ask Maya on Friday”
         </div>
       </Sheet>
       {/* Flow's pill, as it floats over any app (Dayform's pill, kept as it is). */}
@@ -76,7 +76,7 @@ function NotesPicture() {
     <Sheet className="h-[86%]">
       <div className="flex flex-col gap-[2px]">
         <span className="text-[12px] text-black/45">Today, 10:00 am · 32 min · no bot joined</span>
-        <span className="text-[18px] font-bold tracking-[-0.3px]">Pricing review with Maya</span>
+        <span className="text-[18px] font-bold tracking-[-0.3px]">Launch review with Maya</span>
       </div>
       <div className="flex flex-col gap-[4px]">
         <span className="text-[13px] font-semibold">Summary</span>
@@ -88,11 +88,11 @@ function NotesPicture() {
         <span className="text-[13px] font-semibold">Next steps</span>
         <span className="flex items-center gap-[8px] text-[13px]">
           <span className="h-[13px] w-[13px] shrink-0 rounded-[3px] border border-[#D3D1CB]" />
-          Maya: confirm the email went out, <span className="rounded-[4px] bg-[#FCEBC2] px-[4px]">Friday</span>
+          Maya: confirm the launch post went out, <span className="rounded-[4px] bg-[#FCEBC2] px-[4px]">Friday</span>
         </span>
         <span className="flex items-center gap-[8px] text-[13px]">
           <span className="h-[13px] w-[13px] shrink-0 rounded-[3px] border border-[#D3D1CB]" />
-          You: update the pricing page
+          You: update the download page
         </span>
       </div>
     </Sheet>
@@ -101,28 +101,25 @@ function NotesPicture() {
 
 function CapturePicture() {
   return (
-    <>
-      <Sheet className="h-[86%] gap-[10px]">
+    <Sheet className="relative h-[86%] !p-[14px]">
+      {/* The area being recorded: everything stays inside the dashed box, so nothing spills off the card. */}
+      <div className="relative flex h-full flex-col gap-[10px] rounded-[8px] border-[1.5px] border-dashed border-live/80 px-[16px] pt-[14px]">
+        <span className="text-[11px] text-black/40">app.acme.com/billing</span>
         <span className="text-[15px] font-semibold">Payment method</span>
         <div className="flex justify-between border-t border-[#EFEFED] pt-[8px] text-[13px] text-black/60">
           <span>Visa ending 4242</span>
-          <span className="rounded-[4px] bg-[#FCEBC2] px-[5px] font-semibold text-[#C4554D]">Card declined</span>
+          <span className="rounded-[4px] bg-[#FDECC8] px-[5px] font-semibold text-[#B4403A]">Card declined</span>
         </div>
-        <div className="flex justify-between border-t border-[#EFEFED] pt-[8px] text-[13px] text-black/60">
-          <span>Billing email</span>
-          <span>finance@acme.com</span>
-        </div>
-        <div className="pointer-events-none absolute inset-x-[36px] top-[36px] bottom-0 rounded-[4px] border-[1.5px] border-dashed border-live" />
-      </Sheet>
-      <span className="absolute bottom-[20px] left-[36px] flex h-[72px] w-[72px] items-end justify-center overflow-hidden rounded-full border-[3px] border-white bg-[#FCEBC2] shadow-[0_8px_20px_rgba(0,0,0,0.18)]">
-        <Face className="h-[80px] w-[80px]" />
-      </span>
-      <span className="absolute right-[36px] bottom-[26px] flex items-center gap-[8px] rounded-[10px] border border-black/10 bg-white px-[12px] py-[7px] text-[13px] font-medium shadow-[0_6px_16px_rgba(0,0,0,0.08)]">
-        <span className="h-[8px] w-[8px] rounded-full bg-live shadow-[0_0_0_4px_rgba(235,87,87,0.18)]" />
-        0:42
-        <span className="rounded-[6px] bg-ink px-[8px] py-[2px] text-white">Stop</span>
-      </span>
-    </>
+        <span className="absolute bottom-[14px] left-[14px] flex h-[60px] w-[60px] items-end justify-center overflow-hidden rounded-full border-[3px] border-white bg-[#FCEBC2] shadow-[0_8px_20px_rgba(0,0,0,0.16)]">
+          <Face className="h-[66px] w-[66px]" />
+        </span>
+        <span className="absolute right-[14px] bottom-[22px] flex items-center gap-[8px] rounded-[10px] border border-black/10 bg-white px-[10px] py-[6px] text-[13px] font-medium shadow-[0_6px_16px_rgba(0,0,0,0.08)]">
+          <span className="h-[8px] w-[8px] rounded-full bg-live shadow-[0_0_0_4px_rgba(235,87,87,0.18)]" />
+          0:42
+          <span className="rounded-[6px] bg-ink px-[8px] py-[2px] text-white">Stop</span>
+        </span>
+      </div>
+    </Sheet>
   )
 }
 

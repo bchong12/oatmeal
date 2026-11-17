@@ -19,7 +19,6 @@ import { Route as SetupRouteImport } from './routes/setup'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ApiAppConfigRouteImport } from './routes/api.app.config'
 import { Route as ApiAppMeRouteImport } from './routes/api.app.me'
-import { Route as ApiAppNotesRouteImport } from './routes/api.app.notes'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api.auth.logout'
 import { Route as ApiAuthWhopRouteImport } from './routes/api.auth.whop'
 import { Route as ApiAuthWhopCallbackRouteImport } from './routes/api.auth.whop_.callback'
@@ -74,11 +73,6 @@ const ApiAppMeRoute = ApiAppMeRouteImport.update({
   path: '/api/app/me',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiAppNotesRoute = ApiAppNotesRouteImport.update({
-  id: '/api/app/notes',
-  path: '/api/app/notes',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
   id: '/api/auth/logout',
   path: '/api/auth/logout',
@@ -106,7 +100,6 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/api/app/config': typeof ApiAppConfigRoute
   '/api/app/me': typeof ApiAppMeRoute
-  '/api/app/notes': typeof ApiAppNotesRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/whop': typeof ApiAuthWhopRoute
   '/api/auth/whop/callback': typeof ApiAuthWhopCallbackRoute
@@ -122,7 +115,6 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/api/app/config': typeof ApiAppConfigRoute
   '/api/app/me': typeof ApiAppMeRoute
-  '/api/app/notes': typeof ApiAppNotesRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/whop': typeof ApiAuthWhopRoute
   '/api/auth/whop/callback': typeof ApiAuthWhopCallbackRoute
@@ -139,7 +131,6 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/api/app/config': typeof ApiAppConfigRoute
   '/api/app/me': typeof ApiAppMeRoute
-  '/api/app/notes': typeof ApiAppNotesRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/whop': typeof ApiAuthWhopRoute
   '/api/auth/whop_/callback': typeof ApiAuthWhopCallbackRoute
@@ -157,7 +148,6 @@ export interface FileRouteTypes {
     | '/terms'
     | '/api/app/config'
     | '/api/app/me'
-    | '/api/app/notes'
     | '/api/auth/logout'
     | '/api/auth/whop'
     | '/api/auth/whop/callback'
@@ -173,7 +163,6 @@ export interface FileRouteTypes {
     | '/terms'
     | '/api/app/config'
     | '/api/app/me'
-    | '/api/app/notes'
     | '/api/auth/logout'
     | '/api/auth/whop'
     | '/api/auth/whop/callback'
@@ -189,7 +178,6 @@ export interface FileRouteTypes {
     | '/terms'
     | '/api/app/config'
     | '/api/app/me'
-    | '/api/app/notes'
     | '/api/auth/logout'
     | '/api/auth/whop'
     | '/api/auth/whop_/callback'
@@ -206,7 +194,6 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   ApiAppConfigRoute: typeof ApiAppConfigRoute
   ApiAppMeRoute: typeof ApiAppMeRoute
-  ApiAppNotesRoute: typeof ApiAppNotesRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   ApiAuthWhopRoute: typeof ApiAuthWhopRoute
   ApiAuthWhopCallbackRoute: typeof ApiAuthWhopCallbackRoute
@@ -284,13 +271,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAppMeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/app/notes': {
-      id: '/api/app/notes'
-      path: '/api/app/notes'
-      fullPath: '/api/app/notes'
-      preLoaderRoute: typeof ApiAppNotesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/auth/logout': {
       id: '/api/auth/logout'
       path: '/api/auth/logout'
@@ -326,7 +306,6 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   ApiAppConfigRoute: ApiAppConfigRoute,
   ApiAppMeRoute: ApiAppMeRoute,
-  ApiAppNotesRoute: ApiAppNotesRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   ApiAuthWhopRoute: ApiAuthWhopRoute,
   ApiAuthWhopCallbackRoute: ApiAuthWhopCallbackRoute,

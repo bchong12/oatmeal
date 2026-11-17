@@ -38,6 +38,11 @@ const CSS = `
 @keyframes oat-float { from { transform: translateY(0); } to { transform: translateY(-4px); } }
 @keyframes oat-blink { from { opacity: 1; } to { opacity: 0.3; } }
 @keyframes oat-breathe { from { transform: scale(1); } to { transform: scale(1.04); } }
+@keyframes oat-zoom { 0%, 100% { transform: translate(0, 0) scale(1); } 24%, 80% { transform: translate(var(--zx), var(--zy)) scale(var(--zs)); } }
+@keyframes oat-ripple { from { opacity: 0.9; transform: scale(0.4); } to { opacity: 0; transform: scale(1.6); } }
+@keyframes oat-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes oat-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes oat-word { from { opacity: 0; transform: translateY(0.35em); } to { opacity: 1; transform: none; } }
 @keyframes oat-enter { from { opacity: 0; transform: translateY(48px); } to { opacity: 1; transform: none; } }
 
 .oat-rise > * { animation: oat-rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both; }

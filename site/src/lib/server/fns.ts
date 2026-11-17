@@ -5,14 +5,11 @@ import { getRequest } from '@tanstack/react-start/server'
 import { config } from '../../../oatmeal.config'
 import { brandFrom } from '../brand'
 import { env } from '../env'
-import { planConfig, planFor, resolvedPlans } from '../plans'
 import { webSession } from './account'
 import { ensureWhopSetup, siteUrl } from './autoconfig'
 import { baseUrl } from './http'
 
 export const getBrand = createServerFn({ method: 'GET' }).handler(async () => brandFrom(env.read))
-
-export const getPlans = createServerFn({ method: 'GET' }).handler(async () => resolvedPlans())
 
 /** The Mac app's download: DOWNLOAD_URL, else the open-source app's latest release on GitHub. */
 export const getDownload = createServerFn({ method: 'GET' }).handler(async () => download())
@@ -46,34 +43,25 @@ async function download(): Promise<Download> {
   return value
 }
 
-/** Who's signed in on the website, and their plan. Null when signed out. */
+/** Who's signed in on the website. Null when signed out. */
 export const getAccount = createServerFn({ method: 'GET' }).handler(async () => {
   const request = getRequest()
   const session = await webSession(request)
   if (!session) return null
-  const plan = await planFor(session.whopUserId).catch(() => null)
-  return {
-    name: session.name,
-    email: session.email,
-    plan,
-    planName: plan ? planConfig(plan).name : null,
-    site: baseUrl(request, env.appUrl),
-  }
+  return { name: session.name, email: session.email, site: baseUrl(request, env.appUrl) }
 })
 
 /** The owner's checklist after deploying: what's set, what's missing. */
 export const getSetupStatus = createServerFn({ method: 'GET' }).handler(async () => {
   const request = getRequest()
-  const [auto, plans, dl] = await Promise.all([ensureWhopSetup(), resolvedPlans().catch(() => []), download()])
+  const [auto, dl] = await Promise.all([ensureWhopSetup(), download()])
   return {
     appId: env.whopAppId,
     onWhop: Boolean(env.whopAppId),
     origin: siteUrl(baseUrl(request, '')),
     sessionSecret: Boolean(env.sessionSecret),
-    oatmealAI: Boolean(env.anthropicKey),
     downloadConfigured: Boolean(env.downloadUrl || config.downloadUrl),
     download: dl,
-    plans: plans.map((p) => ({ id: p.id, name: p.name, comingSoon: p.comingSoon, linked: p.id === 'free' || Boolean(p.checkoutUrl) })),
     signIn: auto.signIn,
     problem: auto.problem,
   }
