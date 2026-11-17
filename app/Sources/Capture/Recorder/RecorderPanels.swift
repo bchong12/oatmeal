@@ -390,8 +390,8 @@ private struct BubbleView: View {
             ZStack(alignment: .bottom) {
                 CameraPreview()
                     .frame(width: side, height: side)
-                    .clipShape(Circle())
-                    .overlay(Circle().strokeBorder(.white, lineWidth: 3))
+                    .clipShape(RoundedRectangle(cornerRadius: side * 0.24, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: side * 0.24, style: .continuous).strokeBorder(.white, lineWidth: 3))
                     .shadow(color: .black.opacity(0.22), radius: 10, y: 4)
                 if hover {
                     HStack(spacing: 4) {
@@ -408,7 +408,7 @@ private struct BubbleView: View {
             }
             .frame(width: side, height: side)
             .position(x: g.size.width / 2, y: g.size.height / 2)
-            .contentShape(Circle())
+            .contentShape(RoundedRectangle(cornerRadius: side * 0.24, style: .continuous))
             .onHover { hover = $0 }
             .gesture(DragGesture(minimumDistance: 1)
                 .onChanged { v in move(CGSize(width: v.translation.width - last.width, height: v.translation.height - last.height)); last = v.translation }

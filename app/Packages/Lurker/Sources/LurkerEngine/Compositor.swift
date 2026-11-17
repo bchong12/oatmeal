@@ -30,7 +30,7 @@ struct FrameUniforms {
     var highlightCount: Int32 = 0
     var mpad1: Int32 = 0
     var mpad2: Int32 = 0
-    /// Oatmeal's camera bubble: centre x, centre y, radius (output px), mirror (1 = flip).
+    /// Oatmeal's camera (a rounded square): centre x, centre y, half its side (output px), mirror (1 = flip).
     var cam = SIMD4<Float>.zero
     var camSize = SIMD2<Float>.zero
     var camOn: Int32 = 0

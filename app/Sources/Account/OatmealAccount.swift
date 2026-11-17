@@ -2,11 +2,10 @@ import Foundation
 import AppKit
 import Security
 
-/// Your Oatmeal account: which site this copy of the app belongs to, who's signed in there, and what
-/// their plan unlocks. One signed app serves every site deployed from the blueprint: a site's
-/// download page opens `oatmeal://connect?site=…`, sign-in comes back as `oatmeal://signed-in?token=…`,
-/// and the plan is checked with that site (which asks Whop). With no site, the app is the free,
-/// fully local open-source build and nothing is locked.
+/// Your Oatmeal account: which site this copy of the app belongs to and who's signed in there. One
+/// signed app serves every site deployed from the blueprint: a site's download page opens
+/// `oatmeal://connect?site=…` and sign-in comes back as `oatmeal://signed-in?token=…`. Oatmeal is free,
+/// so nothing depends on it: with or without a site, everything works.
 @MainActor
 final class OatmealAccount: ObservableObject {
     static let shared = OatmealAccount()
@@ -14,20 +13,13 @@ final class OatmealAccount: ObservableObject {
     struct SiteInfo: Decodable, Equatable {
         var brand: String
         var signIn: Bool
-        var oatmealAI: Bool
         var signInUrl: String
-        var pricingUrl: String
         var accountUrl: String
     }
 
     struct Me: Codable, Equatable {
         var name: String?
         var email: String?
-        var plan: String
-        var planName: String
-        /// Days of meetings the plan shows; nil for all of them.
-        var historyDays: Int?
-        var oatmealAI: Bool
     }
 
     /// The site's address, e.g. https://oatmeal.whop.site. From `oatmeal://connect`, else the build's default.
@@ -41,21 +33,12 @@ final class OatmealAccount: ObservableObject {
     private static let meKey = "account.me"
 
     var signedIn: Bool { token != nil }
-    var isPaid: Bool { me.map { $0.plan != "free" } ?? false }
     var brand: String { info?.brand ?? "Oatmeal" }
-
-    /// Meetings older than this are kept but locked until Pro. Nil when nothing is locked: no site
-    /// (the open-source build), or a plan with full history.
-    var historyCutoff: Date? {
-        guard site != nil, !isPaid else { return nil }
-        let days = me?.historyDays ?? 30
-        return Calendar.current.date(byAdding: .day, value: -days, to: Calendar.current.startOfDay(for: Date()))
-    }
 
     private init() {
         let saved = UserDefaults.standard.string(forKey: Self.siteKey) ?? (Bundle.main.object(forInfoDictionaryKey: "OatmealSite") as? String) ?? ""
         site = URL(string: saved).flatMap { $0.scheme == "https" || $0.host == "localhost" ? $0 : nil }
-        // The last plan we saw, so Pro stays unlocked offline.
+        // Who was signed in last time, so the account shows offline.
         if let data = UserDefaults.standard.data(forKey: Self.meKey) { me = try? JSONDecoder().decode(Me.self, from: data) }
         if site != nil { Task { await refresh() } }
     }
@@ -121,15 +104,11 @@ final class OatmealAccount: ObservableObject {
         UserDefaults.standard.removeObject(forKey: Self.meKey)
     }
 
-    func openPricing() {
-        if let s = info?.pricingUrl, let url = URL(string: s) { NSWorkspace.shared.open(url) }
-    }
-
     func openAccountPage() {
         if let s = info?.accountUrl, let url = URL(string: s) { NSWorkspace.shared.open(url) }
     }
 
-    /// Reads the site's details and, when signed in, the plan.
+    /// Reads the site's details and, when signed in, who you are.
     func refresh() async {
         guard let site else { return }
         busy = true
@@ -146,32 +125,9 @@ final class OatmealAccount: ObservableObject {
             signOut()
             error = "You were signed out. Sign in again."
         } catch {
-            // Offline or the site is down: keep the last plan we saw.
+            // Offline or the site is down: keep what we had.
             self.error = (error as? AccountError)?.message ?? "Can\u{2019}t reach \(site.host ?? "the site") right now."
         }
-    }
-
-    // MARK: Oatmeal AI
-
-    struct WrittenNotes: Decodable {
-        var title: String
-        var notes: String
-        var summary: [String]
-    }
-
-    /// Has the site's Oatmeal AI write this meeting's notes (Pro).
-    func writeNotes(title: String, startedAt: Date, attendees: [String], transcript: String, myNotes: String) async throws -> WrittenNotes {
-        guard let site else { throw AccountError.message("Connect Oatmeal to your account first.") }
-        let body: [String: Any] = [
-            "title": title, "startedAt": startedAt.formatted(date: .abbreviated, time: .shortened),
-            "attendees": attendees, "transcript": transcript, "myNotes": myNotes,
-        ]
-        var request = try authorized(site.appendingPathComponent("api/app/notes"))
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        request.timeoutInterval = 300
-        return try await send(request, as: WrittenNotes.self)
     }
 
     // MARK: HTTP

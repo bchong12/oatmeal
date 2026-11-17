@@ -33,8 +33,8 @@ your meetings. The tools are `list_meetings`, `get_meeting`, `update_meeting` an
 
 ## The website
 
-`site/` is Oatmeal's website and a Whop blueprint: landing page, pricing, checkout, sign-in, and the
-API the Mac app uses to unlock Pro and Oatmeal AI. Anyone can deploy their own copy and sell Oatmeal;
+`site/` is Oatmeal's website and a Whop blueprint: landing page, download, sign-in, and the small API
+the Mac app signs in with. Oatmeal is free, so there are no plans or prices. Anyone can deploy their own copy;
 see [site/README.md](site/README.md).
 
 ## Features
@@ -74,7 +74,7 @@ app/
   Packages/Lurker  Lurker's recorder and editing engine, copied in: it records captures and renders the
                    polished version (Oatmeal adds mic recording and the camera bubble)
   Sources/
-    Account/    connecting to a site, signing in, the plan, Oatmeal AI
+    Account/    connecting to a site and signing in
     App/        app entry, app state, logging
     Capture/    screenshots, the recorder (start bar, camera bubble, controls) and the shelf
     Design/     colours, type, and Oatmeal's own controls (buttons, menus, dialogs, switches)

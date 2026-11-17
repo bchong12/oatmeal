@@ -42,7 +42,6 @@ private struct MeetingBrowser: View {
     @EnvironmentObject var model: AppModel
     @ObservedObject private var meeting = MeetingService.shared
     @ObservedObject private var importer = AudioImporter.shared
-    @ObservedObject private var account = OatmealAccount.shared
     let allNotes: [MeetingNote]
     let folders: [MeetingFolder]
 
@@ -119,7 +118,7 @@ private struct MeetingBrowser: View {
                             FolderListRow(folder: f, items: MeetingFolders.children(of: f.id, in: folders).count + allNotes.filter { $0.folderID == f.id }.count)
                         }
                         ForEach(list) { n in
-                            MeetingListRow(note: n, picked: picked.contains(n.id), locked: account.historyCutoff.map { n.startedAt < $0 } ?? false,
+                            MeetingListRow(note: n, picked: picked.contains(n.id),
                                            path: searching || isRecent ? MeetingFolders.path(to: MeetingFolders.home(of: n, in: folders), in: folders).map(\.name).joined(separator: " / ") : nil)
                                 .onTapGesture { click(n, in: list) }
                                 .draggable(MeetingFolders.payload(n)) { DragChip(title: n.title, count: picked.contains(n.id) ? picked.count : 1) }
@@ -259,7 +258,6 @@ private struct MeetingBrowser: View {
 
     /// Click opens a meeting; ⌘-click adds or removes it from the pick, ⇧-click picks the run in between.
     private func click(_ n: MeetingNote, in list: [MeetingNote]) {
-        if let cutoff = account.historyCutoff, n.startedAt < cutoff { return offerPro() }
         let mods = NSEvent.modifierFlags
         if mods.contains(.shift), let a = anchor, let i = list.firstIndex(where: { $0.id == a }), let j = list.firstIndex(where: { $0.id == n.id }) {
             withAnimation(.snappy(duration: 0.18)) { picked = Set(list[min(i, j)...max(i, j)].map(\.id)) }
@@ -297,18 +295,6 @@ private struct MeetingBrowser: View {
     }
 
     // MARK: Actions
-
-    /// Free keeps the last 30 days open; older meetings are still on this Mac, just locked.
-    private func offerPro() {
-        let days = account.me?.historyDays ?? 30
-        if account.signedIn {
-            Popups.shared.confirm("Unlock older meetings", "Free shows your last \(days) days. Pro opens every meeting you\u{2019}ve recorded; they\u{2019}re all still on this Mac.",
-                                  confirm: "See Pro") { account.openPricing() }
-        } else {
-            Popups.shared.confirm("Sign in to see older meetings", "Free shows your last \(days) days. Sign in, and Pro opens every meeting you\u{2019}ve recorded.",
-                                  confirm: "Sign in") { account.signIn() }
-        }
-    }
 
     private func newFolder() {
         let f = MeetingFolders.create(in: here, ctx: model.context)
@@ -496,8 +482,6 @@ private struct FolderListRow: View {
 private struct MeetingListRow: View {
     let note: MeetingNote
     let picked: Bool
-    /// Older than the free plan's history: shown, but opens an upgrade prompt.
-    var locked = false
     /// The folder it's in, shown while searching or in Recent.
     let path: String?
     @ObservedObject private var writers = NoteWriters.shared
@@ -508,10 +492,6 @@ private struct MeetingListRow: View {
             HStack(spacing: 10) {
                 MeetingGlyph(size: 18)
                 Text(note.title).font(DF.font(15, .medium)).foregroundStyle(DF.ink).lineLimit(1)
-                if locked {
-                    Label("Pro", systemImage: "lock.fill").labelStyle(DFLabelStyle()).font(DF.font(11, .bold)).foregroundStyle(DF.ink)
-                        .padding(.horizontal, 7).frame(height: 18).background(DF.honey.opacity(0.7), in: Capsule())
-                }
                 if let path, !path.isEmpty {
                     HStack(spacing: 4) { FolderGlyph(size: 11); Text(path).lineLimit(1) }
                         .font(DF.font(13)).foregroundStyle(DF.faint)
@@ -533,7 +513,6 @@ private struct MeetingListRow: View {
             Text("\(max(1, Int((note.duration / 60).rounded()))) min").monospacedDigit().frame(width: 64, alignment: .trailing)
         }
         .font(DF.font(14)).foregroundStyle(DF.muted)
-        .opacity(locked ? 0.55 : 1)
         .modifier(ListRowChrome(hover: hover, picked: picked, targeted: false))
         .onHover { hover = $0 }
     }

@@ -214,11 +214,13 @@ fragment float4 composite(VOut in [[stage_in]],
         c *= u.cursorAlpha / float(m);
         col = col * (1.0 - c.a) + c.rgb;
     }
-    // Oatmeal: the camera bubble, in output space so zooms never move it. A soft shadow, a white ring, the face
-    // (aspect-filled, mirrored like a selfie view).
+    // Oatmeal: the camera, in output space so zooms never move it: a rounded square (corners 24% of its side)
+    // with a soft shadow, a white ring and the face (aspect-filled, mirrored like a selfie view).
     if (u.camOn != 0) {
         float k = u.outSize.y / 1080.0;
-        float d = length(o - u.cam.xy) - u.cam.z;
+        float cr = u.cam.z * 0.48;
+        float2 q = abs(o - u.cam.xy) - (u.cam.z - cr);
+        float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - cr;
         float ring = 4.0 * k;
         col *= 1.0 - 0.22 * (1.0 - smoothstep(0.0, 26.0 * k, d - ring + 6.0 * k));
         float2 local = (o - u.cam.xy) / (2.0 * u.cam.z) + 0.5;
